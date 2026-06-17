@@ -98,7 +98,7 @@ local Window = WindUI:CreateWindow({
 | Role | Contributor | Link |
 |------|:------------|:-----|
 | **Original Author** | Footagesus | [WindUI Repository](https://github.com/Footagesus/WindUI) |
-| **Fork Owner** | orialdev | [GitHub Profile](https://github.com/orialdev) |
+| **SLK GAMING OWNER** | SLK GAMING | [GitHub Profile](https://github.com/SLK-GAMING-MOD) |
 
 > This project would not exist without the original work provided by **Footagesus**.
 >
