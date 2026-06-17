@@ -4,7 +4,7 @@
 
 This fork maintains full compatibility with the original API and structure while introducing various improvements, bug fixes, optimizations, and visual enhancements.
 
-[![WindUI Mod](https://uibin.orqan.xyz/api/card?id=374c5531-a842-426c-bc90-905eafa936c5&theme=orange)](https://uibin.orqan.xyz/library/341a345c-b3c9-42fe-a45c-eb296580ce61)
+[![WindUI Mod](https://uibin.orqan.xyz/api/card?id=341a345c-b3c9-42fe-a45c-eb296580ce61&theme=green)](https://uibin.orqan.xyz/library/341a345c-b3c9-42fe-a45c-eb296580ce61)
 
 ---
 
