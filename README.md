@@ -110,4 +110,4 @@ local Window = WindUI:CreateWindow({
 
 Need help, want updates, or looking for announcements?
 
-👉 **[Join our Discord server](https://discord.gg/B3dEqP2EX6)**
+👉 **[Join our Discord server](https://discord.gg/Tq4CsZbgb)**
