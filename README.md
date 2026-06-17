@@ -23,7 +23,7 @@ This fork maintains full compatibility with the original API and structure while
 Load WindUI Mod into your script using the `loadstring` below:
 
 ```luau
-local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/orialdev/windui-boreal/refs/heads/main/WindUI-Mod.lua"))()
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/SLK-GAMING-MOD/WindUI-Mod/refs/heads/main/WindUI-Mod.luau"))()
 ````
 
 Create a WindUI Mod for your script; you can remove the "--" comments to use the functionality. 
