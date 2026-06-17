@@ -1,4 +1,4 @@
---[[
+local WindUILogo = [[
  __      __.__            ._______ ___.___     _____             .___
 /  \    /  \__| ____    __| _/    |   \   |   /     \   ____   __| _/
 \   \/\/   /  |/    \  / __ ||    |   /   |  /  \ /  \ /  _ \ / __ | 
@@ -7,6 +7,8 @@
        \/          \/      \/                       \/            \/ 
                 WindUI Mod - Make by 72ms
 ]]
+
+print(WindUILogo)
 
 local a={cache={}::any}do do local function __modImpl()local b=(cloneref or clonereference or function(b)return b end)
 
@@ -19759,18 +19761,6 @@ aa.Window=aC
 if av.Acrylic then
 ap.init()
 end
-
-
-
-
-
-
-
-
-
-
-
-
 
 return aC
 end
