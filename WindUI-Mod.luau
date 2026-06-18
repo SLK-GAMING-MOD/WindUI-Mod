@@ -2062,11 +2062,11 @@ New=a.i().New
 return[[
 {
     "name": "windui-mod",
-    "version": "v2.5.87",
+    "version": "v2.5.89",
     "main": "./dist/main.lua",
-    "repository": "https://github.com/orialdev/WindUI-Boreal",
-    "discord": "http://discord.gg/B3dEqP2EX6",
-    "author": "by Footagesus | Forked by orialdev",
+    "repository": "https://github.com/SLK-GAMING-MOD/WindUI-Mod",
+    "discord": "https://discord.gg/Tq4CsZbgb",
+    "author": "by Footagesus | Mod by 72ms",
     "description": "Roblox UI Library for scripts",
     "license": "MIT",
     "scripts": {
@@ -19086,7 +19086,7 @@ av:SetToTheCenter()
 av:Dialog{
 
 Title="Close Window",
-Content="Do you want to close this window? You will not be able to open it again.",
+Content="Are you sure you want to close this window?",
 Buttons={
 {
 Title="Cancel",
@@ -19095,7 +19095,7 @@ Callback=function()aC=false end,
 Variant="Secondary",
 },
 {
-Title="Close Window",
+Title="Continue",
 
 Callback=function()
 aC=false
