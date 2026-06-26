@@ -2062,7 +2062,7 @@ New=a.i().New
 return[[
 {
     "name": "windui-mod",
-    "version": "v2.5.94",
+    "version": "v2.5.95",
     "main": "./dist/main.lua",
     "repository": "https://github.com/SLK-GAMING-MOD/WindUI-Mod",
     "discord": "https://discord.gg/Tq4CsZbgb",
@@ -13410,7 +13410,7 @@ an=false
 SetHoverState(false)
 end)
 
-aa.AddSignal(av.Top.Activated,function()
+aa.AddSignal(av.Top.MouseButton1Click,function()
 if ak.Expandable then
 if ak.Opened then
 ak:Close()
@@ -14531,7 +14531,7 @@ ap=false
 SetHoverState(false)
 end)
 
-aa.AddSignal(d.Top.Activated,function()
+aa.AddSignal(d.Top.MouseButton1Click,function()
 if am.Expandable then
 if am.Opened then
 am:Close()
