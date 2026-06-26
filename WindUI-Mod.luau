@@ -13078,8 +13078,8 @@ aa.NewRoundFrame(ai.Window.ElementConfig.UICorner,"SquircleOutline",{
     ThemeTag={
         ImageColor3="SectionBoxBorder",
     },
-    ImageTransparency=0.5, -- Xóa ImageTransparency ở ThemeTag và set cứng ở đây (0 là nét căng, 0.15 là mờ nhẹ đẹp mắt)
-    ZIndex=2, -- Thêm ZIndex để đảm bảo viền không bị nền đè lên
+    ImageTransparency=0.5,
+    ZIndex=2,
     Visible=ak.Box and ak.BoxBorder,
     Name="Outline",
 }),
