@@ -2062,7 +2062,7 @@ New=a.i().New
 return[[
 {
     "name": "windui-mod",
-    "version": "v2.5.89",
+    "version": "v2.5.94",
     "main": "./dist/main.lua",
     "repository": "https://github.com/SLK-GAMING-MOD/WindUI-Mod",
     "discord": "https://discord.gg/Tq4CsZbgb",
@@ -13072,15 +13072,16 @@ ImageColor3="SectionBoxBackground",
 }or nil,
 ImageTransparency=not ak.Box and 1 or nil,
 },{
-aa.NewRoundFrame(ai.Window.ElementConfig.UICorner,"Glass-1",{
-BackgroundTransparency=1,
-Size=UDim2.new(1,0,1,0),
-ThemeTag={
-ImageTransparency="SectionBoxBorderTransparency",
-ImageColor3="SectionBoxBorder",
-},
-Visible=ak.Box and ak.BoxBorder,
-Name="Outline",
+aa.NewRoundFrame(ai.Window.ElementConfig.UICorner,"SquircleOutline",{
+    BackgroundTransparency=1,
+    Size=UDim2.new(1,0,1,0),
+    ThemeTag={
+        ImageColor3="SectionBoxBorder",
+    },
+    ImageTransparency=0.5, -- Xóa ImageTransparency ở ThemeTag và set cứng ở đây (0 là nét căng, 0.15 là mờ nhẹ đẹp mắt)
+    ZIndex=2, -- Thêm ZIndex để đảm bảo viền không bị nền đè lên
+    Visible=ak.Box and ak.BoxBorder,
+    Name="Outline",
 }),
 ad("TextButton",{
 Name="Top",
@@ -13644,18 +13645,19 @@ ImageColor3="SectionBoxBackground",
 ImageTransparency=not am.Box and 1 or nil,
 },{
 aa.NewRoundFrame(
-al.Window.ElementConfig.UICorner,
-"Glass-1",
-{
-BackgroundTransparency=1,
-Size=UDim2.new(1,0,1,0),
-ThemeTag={
-ImageTransparency="SectionBoxBorderTransparency",
-ImageColor3="SectionBoxBorder",
-},
-Visible=am.Box and am.BoxBorder,
-Name="Outline",
-}
+    al.Window.ElementConfig.UICorner,
+    "SquircleOutline",
+    {
+        BackgroundTransparency=1,
+        Size=UDim2.new(1,0,1,0),
+        ThemeTag={
+            ImageColor3="SectionBoxBorder",
+        },
+        ImageTransparency=0.15,
+        ZIndex=2,
+        Visible=am.Box and am.BoxBorder,
+        Name="Outline",
+    }
 ),
 ad("TextButton",{
 Name="Top",
