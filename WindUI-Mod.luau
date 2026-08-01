@@ -4937,9 +4937,9 @@ transparency=af.Transparency or nil,
 }
 end,
 Load=function(af,ag)
-if af and af.Update then
-af:Update(Color3.fromHex(ag.value),ag.transparency or nil)
-end
+    if af and af.Set then
+        af:Set(Color3.fromHex(ag.value), ag.transparency)
+    end
 end
 },
 Dropdown={
@@ -11715,7 +11715,9 @@ end
 end
 
 function at.Set(av,aw,ax)
-return at:Update(aw,ax)
+    at:Update(aw,ax)
+
+    aa.SafeCallback(at.Callback, aw, ax)
 end
 
 aa.AddSignal(at.UIElements.Colorpicker.MouseButton1Click,function()
