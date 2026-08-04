@@ -2062,7 +2062,7 @@ New=a.i().New
 return[[
 {
     "name": "windui-mod",
-    "version": "v2.5.96",
+    "version": "v2.6.23",
     "main": "./dist/main.lua",
     "repository": "https://github.com/SLK-GAMING-MOD/WindUI-Mod",
     "discord": "https://discord.gg/Tq4CsZbgb",
@@ -5499,19 +5499,27 @@ am.Scale=aq
 end
 
 function ag.Edit(ap,aq)
-local ar={
-Title=aq.Title,
-Icon=aq.Icon,
-Enabled=aq.Enabled,
-Position=aq.Position,
-OnlyIcon=aq.OnlyIcon or false,
-Draggable=aq.Draggable or nil,
-OnlyMobile=aq.OnlyMobile,
-CornerRadius=aq.CornerRadius or UDim.new(1,0),
-StrokeThickness=aq.StrokeThickness or 2,
-Scale=aq.Scale or 1,
-Color=aq.Color
-or ColorSequence.new(Color3.fromHex"40c9ff",Color3.fromHex"e81cff"),
+local ar = {
+    Title = aq.Title,
+    Icon = aq.Icon,
+    Enabled = aq.Enabled,
+    Position = aq.Position,
+    OnlyIcon = aq.OnlyIcon or false,
+    Draggable = aq.Draggable or nil,
+    OnlyMobile = aq.OnlyMobile,
+    CornerRadius = aq.CornerRadius or UDim.new(1,0),
+    StrokeThickness = aq.StrokeThickness or 2,
+    Scale = aq.Scale or 1,
+
+    Color = aq.Color
+        or ColorSequence.new(
+            Color3.fromHex("40c9ff"),
+            Color3.fromHex("e81cff")
+        ),
+
+    BorderAnimation = aq.BorderAnimation,
+    BorderAnimationSpeed = aq.BorderAnimationSpeed,
+    BorderAnimationDirection = aq.BorderAnimationDirection,
 }
 
 
@@ -5567,10 +5575,69 @@ if ar.Icon then
 ag:SetIcon(ar.Icon)
 end
 
-an.UIStroke.UIGradient.Color=ar.Color
-local as=an:FindFirstChild"Glow"
-if as and as:FindFirstChild"UIGradient"then
-as.UIGradient.Color=ar.Color
+an.UIStroke.UIGradient.Color = ar.Color
+
+local StrokeGradient = an.UIStroke:FindFirstChild("UIGradient")
+
+if StrokeGradient then
+    StrokeGradient.Color = ar.Color
+
+    if ar.BorderAnimation == nil then
+        ar.BorderAnimation = true
+    end
+
+    if ar.BorderAnimationSpeed == nil then
+        ar.BorderAnimationSpeed = 35
+    end
+
+    if ar.BorderAnimationDirection == nil then
+        ar.BorderAnimationDirection = "LeftToRight"
+    end
+
+    StrokeGradient.Enabled = ar.BorderAnimation
+
+    if StrokeGradient:FindFirstChild("BorderAnimation") then
+        StrokeGradient.BorderAnimation:Destroy()
+    end
+
+    if ar.BorderAnimation then
+        local RunService = game:GetService("RunService")
+
+        local Bindable = Instance.new("BindableEvent")
+        Bindable.Name = "BorderAnimation"
+        Bindable.Parent = StrokeGradient
+
+        local Rotation = 0
+
+        task.spawn(function()
+
+            while Bindable.Parent and StrokeGradient.Parent do
+
+                local dt = RunService.RenderStepped:Wait()
+
+                if ar.BorderAnimationDirection == "LeftToRight" then
+                    Rotation += ar.BorderAnimationSpeed * dt
+                else
+                    Rotation -= ar.BorderAnimationSpeed * dt
+                end
+
+                Rotation %= 360
+
+                StrokeGradient.Rotation = Rotation
+
+            end
+
+        end)
+
+    else
+        StrokeGradient.Rotation = 0
+    end
+end
+
+local as = an:FindFirstChild("Glow")
+
+if as and as:FindFirstChild("UIGradient") then
+    as.UIGradient.Color = ar.Color
 end
 
 an.UICorner.CornerRadius=ar.CornerRadius
