@@ -5607,7 +5607,9 @@ if StrokeGradient then
         Bindable.Name = "BorderAnimation"
         Bindable.Parent = StrokeGradient
 
-        local Rotation = 0
+        local currentOffset = 0
+        -- Khóa góc xoay ở 0 độ để màu trải ngang
+        StrokeGradient.Rotation = 0 
 
         local Connection
         Connection = RunService.RenderStepped:Connect(function(dt)
@@ -5619,25 +5621,28 @@ if StrokeGradient then
                 return
             end
 
-            local speed = ar.BorderAnimationSpeed or 35
+            -- Điều chỉnh lại scale tốc độ vì Offset chỉ trượt quãng ngắn từ -1 tới 1
+            local speed = (ar.BorderAnimationSpeed or 35) / 50 
+
             if ar.BorderAnimationDirection == "LeftToRight" then
-                Rotation = Rotation + (speed * dt)
+                currentOffset = currentOffset + (speed * dt)
+                -- Khi trượt hết sang phải (>= 1), reset mượt mà về trái (-1)
+                if currentOffset > 1 then
+                    currentOffset = currentOffset - 2
+                end
             else
-                Rotation = Rotation - (speed * dt)
+                currentOffset = currentOffset - (speed * dt)
+                -- Khi trượt hết sang trái (<= -1), reset mượt mà về phải (1)
+                if currentOffset < -1 then
+                    currentOffset = currentOffset + 2
+                end
             end
 
-            -- Tránh dùng %= 360 gây giật frame, trừ/cộng trực tiếp giữ mượt góc quay
-            if Rotation >= 360 then
-                Rotation = Rotation - 360
-            elseif Rotation < 0 then
-                Rotation = Rotation + 360
-            end
-
-            StrokeGradient.Rotation = Rotation
+            StrokeGradient.Offset = Vector2.new(currentOffset, 0)
         end)
 
     else
-        StrokeGradient.Rotation = 0
+        StrokeGradient.Offset = Vector2.new(0, 0)
     end
 end
 
