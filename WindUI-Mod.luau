@@ -5607,7 +5607,7 @@ if StrokeGradient then
         Bindable.Name = "BorderAnimation"
         Bindable.Parent = StrokeGradient
 
-        local Rotation = 0
+        local Offset = StrokeGradient.Offset.X
 
         task.spawn(function()
 
@@ -5615,22 +5615,28 @@ if StrokeGradient then
 
                 local dt = RunService.RenderStepped:Wait()
 
-                if ar.BorderAnimationDirection == "LeftToRight" then
-                    Rotation += ar.BorderAnimationSpeed * dt
+                local Speed = (ar.BorderAnimationSpeed or 35) * 0.01
+
+                if ar.BorderAnimationDirection == "RightToLeft" then
+                    Offset -= Speed * dt
                 else
-                    Rotation -= ar.BorderAnimationSpeed * dt
+                    Offset += Speed * dt
                 end
 
-                Rotation %= 360
+                if Offset > 1 then
+                    Offset = -1
+                elseif Offset < -1 then
+                    Offset = 1
+                end
 
-                StrokeGradient.Rotation = Rotation
+                StrokeGradient.Offset = Vector2.new(Offset, 0)
 
             end
 
         end)
 
     else
-        StrokeGradient.Rotation = 0
+        StrokeGradient.Offset = Vector2.zero
     end
 end
 
