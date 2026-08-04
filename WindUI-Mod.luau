@@ -5597,40 +5597,28 @@ if StrokeGradient then
         Bindable.Name = "BorderAnimation"
         Bindable.Parent = StrokeGradient
 
-        -- Lưu ColorSequence gốc do bạn truyền vào
-        local baseColorSequence = ar.Color or StrokeGradient.Color
+        local baseSequence = ar.Color or StrokeGradient.Color
+        local keypoints = baseSequence.Keypoints
 
-        -- Hàm hỗ trợ nội suy (Lerp) màu Color3
-        local function lerpColor(c1, c2, alpha)
-            return Color3.new(
-                c1.R + (c2.R - c1.R) * alpha,
-                c1.G + (c2.G - c1.G) * alpha,
-                c1.B + (c2.B - c1.B) * alpha
-            )
-        end
-
-        -- Hàm lấy vị trí màu chính xác từ ColorSequence gốc theo thời gian t (từ 0 -> 1)
-        local function evalSequence(seq, t)
+        -- Hàm nội suy màu chuẩn xác tại bất kỳ thời điểm t nào (từ 0 đến 1)
+        local function getColorAtTime(t)
             t = t % 1
-            local keypoints = seq.Keypoints
+            if t < 0 then t = t + 1 end
+
             for i = 1, #keypoints - 1 do
                 local k1 = keypoints[i]
                 local k2 = keypoints[i + 1]
                 if t >= k1.Time and t <= k2.Time then
                     local alpha = (t - k1.Time) / (k2.Time - k1.Time)
-                    return lerpColor(k1.Value, k2.Value, alpha)
+                    return k1.Value:Lerp(k2.Value, alpha)
                 end
             end
             return keypoints[1].Value
         end
 
         local progress = 0
-        -- Cố định Rotation và Offset để dải màu không bị biến dạng khung
         StrokeGradient.Rotation = 0
         StrokeGradient.Offset = Vector2.new(0, 0)
-
-        -- Số điểm phân giải mẫu (12 -> 16 điểm là đủ đẹp và cực nhẹ)
-        local SAMPLES = 12 
 
         local Connection
         Connection = RunService.RenderStepped:Connect(function(dt)
@@ -5639,7 +5627,6 @@ if StrokeGradient then
                 return
             end
 
-            -- Tốc độ trượt màu
             local speed = (ar.BorderAnimationSpeed or 35) / 100
 
             if ar.BorderAnimationDirection == "LeftToRight" then
@@ -5648,16 +5635,44 @@ if StrokeGradient then
                 progress = (progress - speed * dt) % 1
             end
 
-            -- Re-calculate lại danh sách keypoint màu trượt liên tục
-            local newKeypoints = {}
-            for i = 0, SAMPLES do
-                local pos = i / SAMPLES
-                local sampleTime = (pos - progress) % 1
-                local col = evalSequence(baseColorSequence, sampleTime)
-                table.insert(newKeypoints, ColorSequenceKeypoint.new(pos, col))
+            local rawPoints = {}
+
+            -- 1. Tạo 2 điểm màu biên tại 0.0 và 1.0 khớp chính xác với chu kỳ trượt
+            local boundaryColor = getColorAtTime((1 - progress) % 1)
+            table.insert(rawPoints, {Time = 0.0, Color = boundaryColor})
+            table.insert(rawPoints, {Time = 1.0, Color = boundaryColor})
+
+            -- 2. Dịch chuyển tọa độ các Keypoint gốc (Giữ nguyên tuyệt đối khoảng cách dải màu)
+            for i = 1, #keypoints do
+                local kp = keypoints[i]
+                if kp.Time > 0.001 and kp.Time < 0.999 then
+                    local newTime = (kp.Time + progress) % 1
+                    table.insert(rawPoints, {Time = newTime, Color = kp.Value})
+                end
             end
 
-            StrokeGradient.Color = ColorSequence.new(newKeypoints)
+            -- 3. Sắp xếp lại thứ tự điểm màu theo trục thời gian tăng dần
+            table.sort(rawPoints, function(a, b)
+                return a.Time < b.Time
+            end)
+
+            -- 4. Loại bỏ các điểm nằm sát nhau (< 0.001) để tránh lỗi engine của Roblox
+            local finalKeypoints = {}
+            for i = 1, #rawPoints do
+                local pt = rawPoints[i]
+                local prev = finalKeypoints[#finalKeypoints]
+                if not prev or (pt.Time - prev.Time) > 0.001 then
+                    table.insert(finalKeypoints, ColorSequenceKeypoint.new(pt.Time, pt.Color))
+                end
+            end
+
+            -- Đảm bảo điểm kết thúc luôn nằm chính xác ở mốc 1.0
+            if finalKeypoints[#finalKeypoints].Time < 1 then
+                local lastColor = finalKeypoints[#finalKeypoints].Value
+                finalKeypoints[#finalKeypoints] = ColorSequenceKeypoint.new(1.0, lastColor)
+            end
+
+            StrokeGradient.Color = ColorSequence.new(finalKeypoints)
         end)
 
     else
