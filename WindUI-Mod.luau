@@ -5580,19 +5580,9 @@ an.UIStroke.UIGradient.Color = ar.Color
 local StrokeGradient = an.UIStroke:FindFirstChild("UIGradient")
 
 if StrokeGradient then
-    StrokeGradient.Color = ar.Color
-
-    if ar.BorderAnimation == nil then
-        ar.BorderAnimation = true
-    end
-
-    if ar.BorderAnimationSpeed == nil then
-        ar.BorderAnimationSpeed = 35
-    end
-
-    if ar.BorderAnimationDirection == nil then
-        ar.BorderAnimationDirection = "LeftToRight"
-    end
+    if ar.BorderAnimation == nil then ar.BorderAnimation = true end
+    if ar.BorderAnimationSpeed == nil then ar.BorderAnimationSpeed = 35 end
+    if ar.BorderAnimationDirection == nil then ar.BorderAnimationDirection = "LeftToRight" end
 
     StrokeGradient.Enabled = ar.BorderAnimation
 
@@ -5607,42 +5597,72 @@ if StrokeGradient then
         Bindable.Name = "BorderAnimation"
         Bindable.Parent = StrokeGradient
 
-        local currentOffset = 0
-        -- Khóa góc xoay ở 0 độ để màu trải ngang
-        StrokeGradient.Rotation = 0 
+        -- Lưu ColorSequence gốc do bạn truyền vào
+        local baseColorSequence = ar.Color or StrokeGradient.Color
+
+        -- Hàm hỗ trợ nội suy (Lerp) màu Color3
+        local function lerpColor(c1, c2, alpha)
+            return Color3.new(
+                c1.R + (c2.R - c1.R) * alpha,
+                c1.G + (c2.G - c1.G) * alpha,
+                c1.B + (c2.B - c1.B) * alpha
+            )
+        end
+
+        -- Hàm lấy vị trí màu chính xác từ ColorSequence gốc theo thời gian t (từ 0 -> 1)
+        local function evalSequence(seq, t)
+            t = t % 1
+            local keypoints = seq.Keypoints
+            for i = 1, #keypoints - 1 do
+                local k1 = keypoints[i]
+                local k2 = keypoints[i + 1]
+                if t >= k1.Time and t <= k2.Time then
+                    local alpha = (t - k1.Time) / (k2.Time - k1.Time)
+                    return lerpColor(k1.Value, k2.Value, alpha)
+                end
+            end
+            return keypoints[1].Value
+        end
+
+        local progress = 0
+        -- Cố định Rotation và Offset để dải màu không bị biến dạng khung
+        StrokeGradient.Rotation = 0
+        StrokeGradient.Offset = Vector2.new(0, 0)
+
+        -- Số điểm phân giải mẫu (12 -> 16 điểm là đủ đẹp và cực nhẹ)
+        local SAMPLES = 12 
 
         local Connection
         Connection = RunService.RenderStepped:Connect(function(dt)
-            -- Tự động dọn dẹp connection khi Gradient hoặc Bindable bị xóa
             if not (Bindable.Parent and StrokeGradient.Parent) then
-                if Connection then 
-                    Connection:Disconnect() 
-                end
+                if Connection then Connection:Disconnect() end
                 return
             end
 
-            -- Điều chỉnh lại scale tốc độ vì Offset chỉ trượt quãng ngắn từ -1 tới 1
-            local speed = (ar.BorderAnimationSpeed or 35) / 50 
+            -- Tốc độ trượt màu
+            local speed = (ar.BorderAnimationSpeed or 35) / 100
 
             if ar.BorderAnimationDirection == "LeftToRight" then
-                currentOffset = currentOffset + (speed * dt)
-                -- Khi trượt hết sang phải (>= 1), reset mượt mà về trái (-1)
-                if currentOffset > 1 then
-                    currentOffset = currentOffset - 2
-                end
+                progress = (progress + speed * dt) % 1
             else
-                currentOffset = currentOffset - (speed * dt)
-                -- Khi trượt hết sang trái (<= -1), reset mượt mà về phải (1)
-                if currentOffset < -1 then
-                    currentOffset = currentOffset + 2
-                end
+                progress = (progress - speed * dt) % 1
             end
 
-            StrokeGradient.Offset = Vector2.new(currentOffset, 0)
+            -- Re-calculate lại danh sách keypoint màu trượt liên tục
+            local newKeypoints = {}
+            for i = 0, SAMPLES do
+                local pos = i / SAMPLES
+                local sampleTime = (pos - progress) % 1
+                local col = evalSequence(baseColorSequence, sampleTime)
+                table.insert(newKeypoints, ColorSequenceKeypoint.new(pos, col))
+            end
+
+            StrokeGradient.Color = ColorSequence.new(newKeypoints)
         end)
 
     else
         StrokeGradient.Offset = Vector2.new(0, 0)
+        StrokeGradient.Rotation = 0
     end
 end
 
