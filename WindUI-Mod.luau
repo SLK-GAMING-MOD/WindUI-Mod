@@ -2062,7 +2062,7 @@ New=a.i().New
 return[[
 {
     "name": "windui-mod",
-    "version": "v2.6.23",
+    "version": "v2.5.96",
     "main": "./dist/main.lua",
     "repository": "https://github.com/SLK-GAMING-MOD/WindUI-Mod",
     "discord": "https://discord.gg/Tq4CsZbgb",
@@ -5499,27 +5499,19 @@ am.Scale=aq
 end
 
 function ag.Edit(ap,aq)
-local ar = {
-    Title = aq.Title,
-    Icon = aq.Icon,
-    Enabled = aq.Enabled,
-    Position = aq.Position,
-    OnlyIcon = aq.OnlyIcon or false,
-    Draggable = aq.Draggable or nil,
-    OnlyMobile = aq.OnlyMobile,
-    CornerRadius = aq.CornerRadius or UDim.new(1,0),
-    StrokeThickness = aq.StrokeThickness or 2,
-    Scale = aq.Scale or 1,
-
-    Color = aq.Color
-        or ColorSequence.new(
-            Color3.fromHex("40c9ff"),
-            Color3.fromHex("e81cff")
-        ),
-
-    BorderAnimation = aq.BorderAnimation,
-    BorderAnimationSpeed = aq.BorderAnimationSpeed,
-    BorderAnimationDirection = aq.BorderAnimationDirection,
+local ar={
+Title=aq.Title,
+Icon=aq.Icon,
+Enabled=aq.Enabled,
+Position=aq.Position,
+OnlyIcon=aq.OnlyIcon or false,
+Draggable=aq.Draggable or nil,
+OnlyMobile=aq.OnlyMobile,
+CornerRadius=aq.CornerRadius or UDim.new(1,0),
+StrokeThickness=aq.StrokeThickness or 2,
+Scale=aq.Scale or 1,
+Color=aq.Color
+or ColorSequence.new(Color3.fromHex"40c9ff",Color3.fromHex"e81cff"),
 }
 
 
@@ -5575,116 +5567,10 @@ if ar.Icon then
 ag:SetIcon(ar.Icon)
 end
 
-an.UIStroke.UIGradient.Color = ar.Color
-
-local StrokeGradient = an.UIStroke:FindFirstChild("UIGradient")
-
-if StrokeGradient then
-    if ar.BorderAnimation == nil then ar.BorderAnimation = true end
-    if ar.BorderAnimationSpeed == nil then ar.BorderAnimationSpeed = 35 end
-    if ar.BorderAnimationDirection == nil then ar.BorderAnimationDirection = "LeftToRight" end
-
-    StrokeGradient.Enabled = ar.BorderAnimation
-
-    if StrokeGradient:FindFirstChild("BorderAnimation") then
-        StrokeGradient.BorderAnimation:Destroy()
-    end
-
-    if ar.BorderAnimation then
-        local RunService = game:GetService("RunService")
-
-        local Bindable = Instance.new("BindableEvent")
-        Bindable.Name = "BorderAnimation"
-        Bindable.Parent = StrokeGradient
-
-        local baseSequence = ar.Color or StrokeGradient.Color
-        local keypoints = baseSequence.Keypoints
-
-        -- Hàm nội suy màu chuẩn xác tại bất kỳ thời điểm t nào (từ 0 đến 1)
-        local function getColorAtTime(t)
-            t = t % 1
-            if t < 0 then t = t + 1 end
-
-            for i = 1, #keypoints - 1 do
-                local k1 = keypoints[i]
-                local k2 = keypoints[i + 1]
-                if t >= k1.Time and t <= k2.Time then
-                    local alpha = (t - k1.Time) / (k2.Time - k1.Time)
-                    return k1.Value:Lerp(k2.Value, alpha)
-                end
-            end
-            return keypoints[1].Value
-        end
-
-        local progress = 0
-        StrokeGradient.Rotation = 0
-        StrokeGradient.Offset = Vector2.new(0, 0)
-
-        local Connection
-        Connection = RunService.RenderStepped:Connect(function(dt)
-            if not (Bindable.Parent and StrokeGradient.Parent) then
-                if Connection then Connection:Disconnect() end
-                return
-            end
-
-            local speed = (ar.BorderAnimationSpeed or 35) / 100
-
-            if ar.BorderAnimationDirection == "LeftToRight" then
-                progress = (progress + speed * dt) % 1
-            else
-                progress = (progress - speed * dt) % 1
-            end
-
-            local rawPoints = {}
-
-            -- 1. Tạo 2 điểm màu biên tại 0.0 và 1.0 khớp chính xác với chu kỳ trượt
-            local boundaryColor = getColorAtTime((1 - progress) % 1)
-            table.insert(rawPoints, {Time = 0.0, Color = boundaryColor})
-            table.insert(rawPoints, {Time = 1.0, Color = boundaryColor})
-
-            -- 2. Dịch chuyển tọa độ các Keypoint gốc (Giữ nguyên tuyệt đối khoảng cách dải màu)
-            for i = 1, #keypoints do
-                local kp = keypoints[i]
-                if kp.Time > 0.001 and kp.Time < 0.999 then
-                    local newTime = (kp.Time + progress) % 1
-                    table.insert(rawPoints, {Time = newTime, Color = kp.Value})
-                end
-            end
-
-            -- 3. Sắp xếp lại thứ tự điểm màu theo trục thời gian tăng dần
-            table.sort(rawPoints, function(a, b)
-                return a.Time < b.Time
-            end)
-
-            -- 4. Loại bỏ các điểm nằm sát nhau (< 0.001) để tránh lỗi engine của Roblox
-            local finalKeypoints = {}
-            for i = 1, #rawPoints do
-                local pt = rawPoints[i]
-                local prev = finalKeypoints[#finalKeypoints]
-                if not prev or (pt.Time - prev.Time) > 0.001 then
-                    table.insert(finalKeypoints, ColorSequenceKeypoint.new(pt.Time, pt.Color))
-                end
-            end
-
-            -- Đảm bảo điểm kết thúc luôn nằm chính xác ở mốc 1.0
-            if finalKeypoints[#finalKeypoints].Time < 1 then
-                local lastColor = finalKeypoints[#finalKeypoints].Value
-                finalKeypoints[#finalKeypoints] = ColorSequenceKeypoint.new(1.0, lastColor)
-            end
-
-            StrokeGradient.Color = ColorSequence.new(finalKeypoints)
-        end)
-
-    else
-        StrokeGradient.Offset = Vector2.new(0, 0)
-        StrokeGradient.Rotation = 0
-    end
-end
-
-local as = an:FindFirstChild("Glow")
-
-if as and as:FindFirstChild("UIGradient") then
-    as.UIGradient.Color = ar.Color
+an.UIStroke.UIGradient.Color=ar.Color
+local as=an:FindFirstChild"Glow"
+if as and as:FindFirstChild"UIGradient"then
+as.UIGradient.Color=ar.Color
 end
 
 an.UICorner.CornerRadius=ar.CornerRadius
