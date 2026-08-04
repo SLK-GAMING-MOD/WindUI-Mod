@@ -5600,55 +5600,43 @@ if StrokeGradient then
         StrokeGradient.BorderAnimation:Destroy()
     end
 
-    if StrokeGradient:FindFirstChild("BorderAnimationTween") then
-        StrokeGradient.BorderAnimationTween:Destroy()
-    end
-
     if ar.BorderAnimation then
-        local TweenService = game:GetService("TweenService")
+        local RunService = game:GetService("RunService")
 
-        local Flag = Instance.new("BoolValue")
-        Flag.Name = "BorderAnimation"
-        Flag.Parent = StrokeGradient
+        local Bindable = Instance.new("BindableEvent")
+        Bindable.Name = "BorderAnimation"
+        Bindable.Parent = StrokeGradient
 
-        local TweenFlag = Instance.new("ObjectValue")
-        TweenFlag.Name = "BorderAnimationTween"
-        TweenFlag.Parent = StrokeGradient
+        local Rotation = 0
 
-        local Time = math.max(0.1, 70 / ar.BorderAnimationSpeed)
+        local Connection
+        Connection = RunService.RenderStepped:Connect(function(dt)
+            -- Tự động dọn dẹp connection khi Gradient hoặc Bindable bị xóa
+            if not (Bindable.Parent and StrokeGradient.Parent) then
+                if Connection then 
+                    Connection:Disconnect() 
+                end
+                return
+            end
 
-        local Goal
+            local speed = ar.BorderAnimationSpeed or 35
+            if ar.BorderAnimationDirection == "LeftToRight" then
+                Rotation = Rotation + (speed * dt)
+            else
+                Rotation = Rotation - (speed * dt)
+            end
 
-        if ar.BorderAnimationDirection == "RightToLeft" then
-            StrokeGradient.Rotation = 45
-            Goal = {Rotation = -45}
-        else
-            StrokeGradient.Rotation = -45
-            Goal = {Rotation = 45}
-        end
+            -- Tránh dùng %= 360 gây giật frame, trừ/cộng trực tiếp giữ mượt góc quay
+            if Rotation >= 360 then
+                Rotation = Rotation - 360
+            elseif Rotation < 0 then
+                Rotation = Rotation + 360
+            end
 
-        local Tween = TweenService:Create(
-            StrokeGradient,
-            TweenInfo.new(
-                Time,
-                Enum.EasingStyle.Linear,
-                Enum.EasingDirection.InOut,
-                -1,
-                true -- PingPong
-            ),
-            Goal
-        )
-
-        TweenFlag.Value = Tween
-        Tween:Play()
+            StrokeGradient.Rotation = Rotation
+        end)
 
     else
-        local TweenFlag = StrokeGradient:FindFirstChild("BorderAnimationTween")
-
-        if TweenFlag and TweenFlag.Value then
-            TweenFlag.Value:Cancel()
-        end
-
         StrokeGradient.Rotation = 0
     end
 end
