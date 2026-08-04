@@ -5600,43 +5600,56 @@ if StrokeGradient then
         StrokeGradient.BorderAnimation:Destroy()
     end
 
+    if StrokeGradient:FindFirstChild("BorderAnimationTween") then
+        StrokeGradient.BorderAnimationTween:Destroy()
+    end
+
     if ar.BorderAnimation then
-        local RunService = game:GetService("RunService")
+        local TweenService = game:GetService("TweenService")
 
-        local Bindable = Instance.new("BindableEvent")
-        Bindable.Name = "BorderAnimation"
-        Bindable.Parent = StrokeGradient
+        local Flag = Instance.new("BoolValue")
+        Flag.Name = "BorderAnimation"
+        Flag.Parent = StrokeGradient
 
-        local Offset = StrokeGradient.Offset.X
+        local TweenFlag = Instance.new("ObjectValue")
+        TweenFlag.Name = "BorderAnimationTween"
+        TweenFlag.Parent = StrokeGradient
 
-        task.spawn(function()
+        local Time = math.max(0.1, 70 / ar.BorderAnimationSpeed)
 
-            while Bindable.Parent and StrokeGradient.Parent do
+        local Goal
 
-                local dt = RunService.RenderStepped:Wait()
+        if ar.BorderAnimationDirection == "RightToLeft" then
+            StrokeGradient.Rotation = 45
+            Goal = {Rotation = -45}
+        else
+            StrokeGradient.Rotation = -45
+            Goal = {Rotation = 45}
+        end
 
-                local Speed = (ar.BorderAnimationSpeed or 35) * 0.01
+        local Tween = TweenService:Create(
+            StrokeGradient,
+            TweenInfo.new(
+                Time,
+                Enum.EasingStyle.Linear,
+                Enum.EasingDirection.InOut,
+                -1,
+                true -- PingPong
+            ),
+            Goal
+        )
 
-                if ar.BorderAnimationDirection == "RightToLeft" then
-                    Offset -= Speed * dt
-                else
-                    Offset += Speed * dt
-                end
-
-                if Offset > 1 then
-                    Offset = -1
-                elseif Offset < -1 then
-                    Offset = 1
-                end
-
-                StrokeGradient.Offset = Vector2.new(Offset, 0)
-
-            end
-
-        end)
+        TweenFlag.Value = Tween
+        Tween:Play()
 
     else
-        StrokeGradient.Offset = Vector2.zero
+        local TweenFlag = StrokeGradient:FindFirstChild("BorderAnimationTween")
+
+        if TweenFlag and TweenFlag.Value then
+            TweenFlag.Value:Cancel()
+        end
+
+        StrokeGradient.Rotation = 0
     end
 end
 
