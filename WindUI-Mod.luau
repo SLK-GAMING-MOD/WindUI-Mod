@@ -5395,15 +5395,21 @@ am,
 ac("UICorner",{
 CornerRadius=UDim.new(1,0)
 }),
-ac("UIStroke",{
-Thickness=1,
-ApplyStrokeMode="Border",
-Color=Color3.new(1,1,1),
-Transparency=0,
-},{
-ac("UIGradient",{
-Color=ColorSequence.new(Color3.fromHex"40c9ff",Color3.fromHex"e81cff")
+local OpenButtonStrokeGradient = ac("UIGradient",{
+    Rotation = 0,
+    Color = ColorSequence.new(
+        Color3.fromHex("40c9ff"),
+        Color3.fromHex("e81cff")
+    )
 })
+
+ac("UIStroke",{
+    Thickness = 1,
+    ApplyStrokeMode = "Border",
+    Color = Color3.new(1,1,1),
+    Transparency = 0,
+},{
+    OpenButtonStrokeGradient
 }),
 aj,
 ak,
@@ -5445,7 +5451,21 @@ PaddingRight=UDim.new(0,4),
 
 ag.Button=an
 
+local TweenService = game:GetService("TweenService")
 
+TweenService:Create(
+    OpenButtonStrokeGradient,
+    TweenInfo.new(
+        ar.AnimationSpeed or 3,
+        Enum.EasingStyle.Linear,
+        Enum.EasingDirection.InOut,
+        -1,
+        false
+    ),
+    {
+        Rotation = 360
+    }
+):Play()
 
 function ag.SetIcon(ao,ap)
 if ah then
