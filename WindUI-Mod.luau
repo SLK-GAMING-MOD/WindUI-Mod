@@ -5,7 +5,7 @@ local WindUILogo = [[
  \  /\  /| | | | | (_| \ \_/ /\/ /_   / /\/\ \ (_) | (_| |
   \/  \/ |_|_| |_|\__,_|\___/\____/   \/    \/\___/ \__,_|
                                                           
-             WindUI Mod - Make by 72ms
+             WindUI Mod - Version 2.5.99
 ]]
 
 print(WindUILogo)
@@ -2062,7 +2062,7 @@ New=a.i().New
 return[[
 {
     "name": "windui-mod",
-    "version": "v2.5.96",
+    "version": "v2.5.99",
     "main": "./dist/main.lua",
     "repository": "https://github.com/SLK-GAMING-MOD/WindUI-Mod",
     "discord": "https://discord.gg/Tq4CsZbgb",
@@ -5091,8 +5091,26 @@ function ai.Get(aj,ak)
 return ai.CustomData[ak]
 end
 
-function ai.SetAutoLoad(aj,ak)
-ai.AutoLoad=ak
+function ai.SetAutoLoad(aj, ak)
+    ai.AutoLoad = ak == true
+
+    if ai.AutoLoad then
+        for al, am in next, ae.Configs do
+            if am ~= ai and am.AutoLoad then
+                am.AutoLoad = false
+
+                pcall(function()
+                    am:Save()
+                end)
+            end
+        end
+    end
+
+    pcall(function()
+        ai:Save()
+    end)
+
+    return ai
 end
 
 function ai.Save(aj)
@@ -5124,48 +5142,67 @@ return ak
 end
 
 function ai.Load(aj)
-if isfile and not isfile(ai.Path)then
-return false,"Config file does not exist"
-end
+    if isfile and not isfile(ai.Path) then
+        return false, "Config file does not exist"
+    end
 
-local ak,al=pcall(function()
-local ak=readfile or function()
-warn"[ WindUI.ConfigManager ] The config system doesn't work in the studio."
-return nil
-end
-return ac:JSONDecode(ak(ai.Path))
-end)
+    local ak, al = pcall(function()
+        local am = readfile or function()
+            warn("[ WindUI.ConfigManager ] The config system doesn't work in the studio.")
+            return nil
+        end
 
-if not ak then
-return false,"Failed to parse config file"
-end
+        return ac:JSONDecode(am(ai.Path))
+    end)
 
-if not al.__version then
-local am={
-__version=ai.Version,
-__elements=al,
-__custom={}
-}
-al=am
-end
+    if not ak or not al then
+        return false, "Failed to parse config file"
+    end
 
-if ad.PendingFlags then
-for am,an in next,ad.PendingFlags do
-ai:Register(am,an)
-end
-end
+    if not al.__version then
+        al = {
+            __version = ai.Version,
+            __elements = al,
+            __custom = {}
+        }
+    end
 
-for am,an in next,(al.__elements or{})do
-if ai.Elements[am]and ae.Parser[an.__type]then
-task.spawn(function()
-ae.Parser[an.__type].Load(ai.Elements[am],an)
-end)
-end
-end
+    if ad.PendingFlags then
+        for am, an in next, ad.PendingFlags do
+            ai:Register(am, an)
+        end
+    end
 
-ai.CustomData=al.__custom or{}
+    ad.PendingConfigData = ad.PendingConfigData or {}
 
-return ai.CustomData
+    for am, an in next, (al.__elements or {}) do
+        if ai.Elements[am] then
+            local ao = ae.Parser[an.__type]
+
+            if ao and ao.Load then
+                task.defer(function()
+                    local ap, aq = pcall(function()
+                        ao.Load(ai.Elements[am], an)
+                    end)
+
+                    if not ap then
+                        warn(
+                            "[ WindUI.ConfigManager ] Failed to load flag '"
+                            .. tostring(am)
+                            .. "': "
+                            .. tostring(aq)
+                        )
+                    end
+                end)
+            end
+        else
+            ad.PendingConfigData[am] = an
+        end
+    end
+
+    ai.CustomData = al.__custom or {}
+
+    return ai.CustomData
 end
 
 function ai.Delete(aj)
@@ -5203,31 +5240,44 @@ autoload=ai.AutoLoad
 end
 
 
-if isfile(ai.Path)then
-local aj,ak=pcall(function()
-return ac:JSONDecode(readfile(ai.Path))
-end)
+if isfile(ai.Path) then
+    local aj, ak = pcall(function()
+        return ac:JSONDecode(readfile(ai.Path))
+    end)
 
-if aj and ak and ak.__autoload then
-ai.AutoLoad=true
+    if aj and ak and ak.__autoload == true then
+        ai.AutoLoad = true
 
-task.spawn(function()
-task.wait(0.5)
-local al,am=pcall(function()
-return ai:Load()
-end)
-if al then
-if ad.Debug then print("[ WindUI.ConfigManager ] AutoLoaded config: "..ag)end
-else
-warn("[ WindUI.ConfigManager ] Failed to AutoLoad config: "..ag.." - "..tostring(am))
+        ae.Configs[ag] = ai
+        ai:SetAsCurrent()
+
+        task.defer(function()
+            local al, am = ai:Load()
+
+            if al ~= false then
+                if ad.Debug then
+                    print(
+                        "[ WindUI.ConfigManager ] AutoLoaded config: "
+                        .. tostring(ag)
+                    )
+                end
+            else
+                warn(
+                    "[ WindUI.ConfigManager ] Failed to AutoLoad config: "
+                    .. tostring(ag)
+                    .. " - "
+                    .. tostring(am)
+                )
+            end
+        end)
+
+        return ai
+    end
 end
-end)
-end
-end
 
 
+ae.Configs[ag] = ai
 ai:SetAsCurrent()
-ae.Configs[ag]=ai
 return ai
 end
 
