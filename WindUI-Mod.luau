@@ -5,7 +5,7 @@ local WindUILogo = [[
  \  /\  /| | | | | (_| \ \_/ /\/ /_   / /\/\ \ (_) | (_| |
   \/  \/ |_|_| |_|\__,_|\___/\____/   \/    \/\___/ \__,_|
                                                           
-             WindUI Mod - Make by Version v2.6.01
+             WindUI Mod - Version v2.6.01
 ]]
 
 print(WindUILogo)
