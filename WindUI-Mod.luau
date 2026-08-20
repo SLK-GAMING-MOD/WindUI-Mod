@@ -5095,6 +5095,7 @@ function ai.SetAutoLoad(aj,ak)
 ai.AutoLoad=ak
 end
 
+local ar = 0
 function ai.Save(aj)
 if ad.PendingFlags then
 for ak,al in next,ad.PendingFlags do
@@ -5115,10 +5116,15 @@ ak.__elements[tostring(al)]=ae.Parser[am.__type].Save(am)
 end
 end
 
-local al=ac:JSONEncode(ak)
+ar = ar + 1
+local myGen = ar
+task.delay(0.15, function()
+if myGen ~= ar then return end
+local al = ac:JSONEncode(ak)
 if writefile then
-writefile(ai.Path,al)
+writefile(ai.Path, al)
 end
+end)
 
 return ak
 end
@@ -5155,13 +5161,21 @@ ai:Register(am,an)
 end
 end
 
-for am,an in next,(al.__elements or{})do
-if ai.Elements[am]and ae.Parser[an.__type]then
 task.spawn(function()
-ae.Parser[an.__type].Load(ai.Elements[am],an)
+local count = 0
+for am, ao in next, (al.__elements or {}) do
+if ai.Elements[am] and ae.Parser[ao.__type] then
+local ok, err = pcall(ae.Parser[ao.__type].Load, ai.Elements[am], ao)
+if not ok and ad.Debug then
+warn("[ WindUI.ConfigManager ] Failed to load element '"..tostring(am).."': "..tostring(err))
+end
+count = count + 1
+if count % 8 == 0 then
+task.wait()
+end
+end
+end
 end)
-end
-end
 
 ai.CustomData=al.__custom or{}
 
