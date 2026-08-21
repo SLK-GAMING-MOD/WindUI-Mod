@@ -5,7 +5,7 @@ local WindUILogo = [[
  \  /\  /| | | | | (_| \ \_/ /\/ /_   / /\/\ \ (_) | (_| |
   \/  \/ |_|_| |_|\__,_|\___/\____/   \/    \/\___/ \__,_|
                                                           
-             WindUI Mod - Version v2.6.04
+             WindUI Mod - Version v2.6.01
 ]]
 
 print(WindUILogo)
@@ -19463,8 +19463,17 @@ Value=ExistingAutoLoadConfig~=nil,
 Callback=function(G)
 if G then
 local H=av.CurrentConfig
+if not H and typeof(F.Resolve)=="function"then
+local Ok,Res=pcall(F.Resolve)
+if Ok and Res then
+H=Res
+end
+end
 if not H then
 warn"[ WindUI.Autoload ] No config is currently selected/created. Select or create a config first."
+if AutoLoadToggle and AutoLoadToggle.Set then
+AutoLoadToggle:Set(false,nil,false)
+end
 return
 end
 H:SetAutoLoad(true)
