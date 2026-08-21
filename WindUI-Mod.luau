@@ -5,7 +5,7 @@ local WindUILogo = [[
  \  /\  /| | | | | (_| \ \_/ /\/ /_   / /\/\ \ (_) | (_| |
   \/  \/ |_|_| |_|\__,_|\___/\____/   \/    \/\___/ \__,_|
                                                           
-             WindUI Mod - Version v2.6.07
+             WindUI Mod - Version v2.6.08
 ]]
 
 print(WindUILogo)
@@ -2062,7 +2062,7 @@ New=a.i().New
 return[[
 {
     "name": "windui-mod",
-    "version": "v2.6.07",
+    "version": "v2.6.08",
     "main": "./dist/main.lua",
     "repository": "https://github.com/SLK-GAMING-MOD/WindUI-Mod",
     "discord": "https://discord.gg/Tq4CsZbgb",
@@ -19474,6 +19474,9 @@ warn"[ WindUI.Autoload ] No config is currently selected/created. Select or crea
 if AutoLoadToggle and AutoLoadToggle.Set then
 AutoLoadToggle:Set(false,nil,false)
 end
+if typeof(F.OnError)=="function"then
+task.spawn(F.OnError,"no_config")
+end
 return
 end
 H:SetAutoLoad(true)
@@ -19481,11 +19484,17 @@ local N=H.Path and H.Path:match"([^/\\]+)%.json$"
 ClearOtherAutoLoads(N)
 H:Save()
 StartAutoSave()
+if typeof(F.OnEnabled)=="function"then
+task.spawn(F.OnEnabled,H,N)
+end
 else
 StopAutoSave()
 if av.CurrentConfig then
 av.CurrentConfig:SetAutoLoad(false)
 av.CurrentConfig:Save()
+end
+if typeof(F.OnDisabled)=="function"then
+task.spawn(F.OnDisabled)
 end
 end
 end,
