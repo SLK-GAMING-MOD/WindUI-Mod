@@ -5,7 +5,7 @@ local WindUILogo = [[
  \  /\  /| | | | | (_| \ \_/ /\/ /_   / /\/\ \ (_) | (_| |
   \/  \/ |_|_| |_|\__,_|\___/\____/   \/    \/\___/ \__,_|
                                                           
-             WindUI Mod - Version v2.6.01
+             WindUI Mod - Version v2.6.04
 ]]
 
 print(WindUILogo)
@@ -19353,6 +19353,138 @@ end
 end
 end
 end
+
+
+-- ===================== AUTOLOAD (added) =====================
+-- Window:Autoload({ Parent = SomeTab, Title = "Auto Load", Desc = "...", AutoSaveInterval = 3 })
+-- - Creates the "Auto Load" Toggle element for you inside Parent (a Tab or Section).
+-- - On startup, scans saved configs for the one flagged to autoload and loads it automatically.
+-- - Turning the toggle ON flags Window.CurrentConfig (whatever config is selected via your
+--   own config dropdown/Save/Load UI) as the autoload target, and unflags every other config
+--   (only one config can autoload at a time).
+-- - While ON, periodically saves the current config ("auto save mode").
+-- Returns the created Toggle element table.
+function av.Autoload(C,F)
+F=F or{}
+
+local ConfigManager=av.ConfigManager
+if not ConfigManager then
+warn"[ WindUI.Autoload ] ConfigManager is not available. Set Window.Folder to enable the config system."
+return nil
+end
+
+local Parent=F.Parent
+if not Parent or not Parent.Toggle then
+warn"[ WindUI.Autoload ] Autoload requires a valid 'Parent' (a Tab or Section) to place the toggle in."
+return nil
+end
+
+local HttpService=(cloneref or clonereference or function(G)return G end)(game:GetService"HttpService")
+
+local AutoSaveEnabled=false
+local AutoSaveInterval=tonumber(F.AutoSaveInterval)or 3
+
+local function ReadConfigFile(G)
+local H=ConfigManager.Path..G..".json"
+if not(isfile and isfile(H))then return nil end
+local I,J=pcall(function()
+return HttpService:JSONDecode(readfile(H))
+end)
+if I then return J end
+return nil
+end
+
+local function WriteConfigAutoLoadFlag(G,K)
+local H=ConfigManager.Path..G..".json"
+local J=ReadConfigFile(G)
+if not J then return end
+J.__autoload=K
+local L,M=pcall(function()
+writefile(H,HttpService:JSONEncode(J))
+end)
+if not L then
+warn("[ WindUI.Autoload ] Failed to update autoload flag for '"..G.."': "..tostring(M))
+end
+end
+
+local function FindAutoLoadConfigName()
+for _,G in next,ConfigManager:AllConfigs()do
+local J=ReadConfigFile(G)
+if J and J.__autoload then
+return G
+end
+end
+return nil
+end
+
+local function ClearOtherAutoLoads(Except)
+for _,G in next,ConfigManager:AllConfigs()do
+if G~=Except then
+local J=ReadConfigFile(G)
+if J and J.__autoload then
+WriteConfigAutoLoadFlag(G,false)
+end
+end
+end
+end
+
+local function StartAutoSave()
+if AutoSaveEnabled then return end
+AutoSaveEnabled=true
+task.spawn(function()
+while AutoSaveEnabled and not av.Destroyed do
+task.wait(AutoSaveInterval)
+if AutoSaveEnabled and av.CurrentConfig and av.CurrentConfig.Save then
+pcall(function()av.CurrentConfig:Save()end)
+end
+end
+end)
+end
+
+local function StopAutoSave()
+AutoSaveEnabled=false
+end
+
+local ExistingAutoLoadConfig=FindAutoLoadConfigName()
+if ExistingAutoLoadConfig then
+-- Reuses the library's own startup-autoload logic (reads the __autoload flag on disk
+-- and loads the config ~0.5s after CreateConfig).
+ConfigManager:CreateConfig(ExistingAutoLoadConfig,true)
+task.delay(0.6,function()
+StartAutoSave()
+end)
+end
+
+local AutoLoadToggle=Parent:Toggle{
+Title=F.Title or"Auto Load",
+Desc=F.Desc,
+Icon=F.Icon,
+Value=ExistingAutoLoadConfig~=nil,
+Callback=function(G)
+if G then
+local H=av.CurrentConfig
+if not H then
+warn"[ WindUI.Autoload ] No config is currently selected/created. Select or create a config first."
+return
+end
+H:SetAutoLoad(true)
+local N=H.Path and H.Path:match"([^/\\]+)%.json$"
+ClearOtherAutoLoads(N)
+H:Save()
+StartAutoSave()
+else
+StopAutoSave()
+if av.CurrentConfig then
+av.CurrentConfig:SetAutoLoad(false)
+av.CurrentConfig:Save()
+end
+end
+end,
+}
+
+return AutoLoadToggle
+end
+-- =================== END AUTOLOAD (added) ====================
 
 
 
