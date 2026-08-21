@@ -5,7 +5,7 @@ local WindUILogo = [[
  \  /\  /| | | | | (_| \ \_/ /\/ /_   / /\/\ \ (_) | (_| |
   \/  \/ |_|_| |_|\__,_|\___/\____/   \/    \/\___/ \__,_|
                                                           
-             WindUI Mod - Version v2.6.02
+             WindUI Mod - Version v2.6.01
 ]]
 
 print(WindUILogo)
@@ -5061,10 +5061,6 @@ end
 function ae.CreateConfig(af,ag,ah)
 if not ag then
 return false,"No config file is selected"
-end
-
-if ae.Configs[ag] then
-return ae.Configs[ag]
 end
 
 local ai={
