@@ -5,7 +5,7 @@ local WindUILogo = [[
  \  /\  /| | | | | (_| \ \_/ /\/ /_   / /\/\ \ (_) | (_| |
   \/  \/ |_|_| |_|\__,_|\___/\____/   \/    \/\___/ \__,_|
                                                           
-             WindUI Mod - Version v2.6.08
+             WindUI Mod - Version v2.6.09
 ]]
 
 print(WindUILogo)
@@ -2062,7 +2062,7 @@ New=a.i().New
 return[[
 {
     "name": "windui-mod",
-    "version": "v2.6.08",
+    "version": "v2.6.01",
     "main": "./dist/main.lua",
     "repository": "https://github.com/SLK-GAMING-MOD/WindUI-Mod",
     "discord": "https://discord.gg/Tq4CsZbgb",
@@ -19449,7 +19449,11 @@ local ExistingAutoLoadConfig=FindAutoLoadConfigName()
 if ExistingAutoLoadConfig then
 -- Reuses the library's own startup-autoload logic (reads the __autoload flag on disk
 -- and loads the config ~0.5s after CreateConfig).
-ConfigManager:CreateConfig(ExistingAutoLoadConfig,true)
+local G=ConfigManager:CreateConfig(ExistingAutoLoadConfig,true)
+if G then
+av.CurrentConfig=G -- BUG FIX: without this the auto-save loop below finds
+-- av.CurrentConfig == nil and silently saves nothing.
+end
 task.delay(0.6,function()
 StartAutoSave()
 end)
