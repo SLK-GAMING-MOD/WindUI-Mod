@@ -1,4 +1,4 @@
-local WindUILogo = [[
+print([[
  __    __ _           _        _____                    _ 
 / / /\ \ (_)_ __   __| |/\ /\  \_   \   /\/\   ___   __| |
 \ \/  \/ / | '_ \ / _` / / \ \  / /\/  /    \ / _ \ / _` |
@@ -6,9 +6,7 @@ local WindUILogo = [[
   \/  \/ |_|_| |_|\__,_|\___/\____/   \/    \/\___/ \__,_|
                                                           
              WindUI Mod - Version 2.6.09
-]]
-
-print(WindUILogo)
+]])
 
 local a={cache={}::any}do do local function __modImpl()local b=(cloneref or clonereference or function(b)return b end)
 
