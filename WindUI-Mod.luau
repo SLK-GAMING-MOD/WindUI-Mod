@@ -1,13 +1,14 @@
-print([[
-
+local WindUILogo = [[
  __    __ _           _        _____                    _ 
 / / /\ \ (_)_ __   __| |/\ /\  \_   \   /\/\   ___   __| |
 \ \/  \/ / | '_ \ / _` / / \ \  / /\/  /    \ / _ \ / _` |
  \  /\  /| | | | | (_| \ \_/ /\/ /_   / /\/\ \ (_) | (_| |
   \/  \/ |_|_| |_|\__,_|\___/\____/   \/    \/\___/ \__,_|
                                                           
-             WindUI Mod - Version 2.6.09
-]])
+             WindUI Mod - Version v2.6.01
+]]
+
+print(WindUILogo)
 
 local a={cache={}::any}do do local function __modImpl()local b=(cloneref or clonereference or function(b)return b end)
 
@@ -2061,7 +2062,7 @@ New=a.i().New
 return[[
 {
     "name": "windui-mod",
-    "version": "v2.6.09",
+    "version": "v2.6.01",
     "main": "./dist/main.lua",
     "repository": "https://github.com/SLK-GAMING-MOD/WindUI-Mod",
     "discord": "https://discord.gg/Tq4CsZbgb",
@@ -5060,6 +5061,23 @@ end
 function ae.CreateConfig(af,ag,ah)
 if not ag then
 return false,"No config file is selected"
+end
+
+-- BUG FIX: previously this always built a brand-new config object with an
+-- empty Elements table, even if a config with this name already existed.
+-- Every element (Toggle/Slider/...) registers itself onto whichever config
+-- object is CurrentConfig at the moment it's created. Overwriting that
+-- object on every CreateConfig() call (i.e. every Make/Update/Load click,
+-- and every internal Autoload call) silently orphaned all already-
+-- registered elements, so the next Save() wrote a near-empty file.
+-- Reusing the cached object preserves everything already registered.
+if ae.Configs[ag]then
+local aiExisting=ae.Configs[ag]
+if ah~=nil then
+aiExisting.AutoLoad=ah
+end
+aiExisting:SetAsCurrent()
+return aiExisting
 end
 
 local ai={
