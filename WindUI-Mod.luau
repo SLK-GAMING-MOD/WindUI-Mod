@@ -6,7 +6,7 @@ print([[
  \  /\  /| | | | | (_| \ \_/ /\/ /_   / /\/\ \ (_) | (_| |
   \/  \/ |_|_| |_|\__,_|\___/\____/   \/    \/\___/ \__,_|
                                                           
-             WindUI Mod - Version 2.6.13
+             WindUI Mod - Version 2.6.14
 ]])
 
 local a={cache={}::any}do do local function __modImpl()local b=(cloneref or clonereference or function(b)return b end)
@@ -2061,7 +2061,7 @@ New=a.i().New
 return[[
 {
     "name": "windui-mod",
-    "version": "v2.6.13",
+    "version": "v2.6.14",
     "main": "./dist/main.lua",
     "repository": "https://github.com/SLK-GAMING-MOD/WindUI-Mod",
     "discord": "https://discord.gg/Tq4CsZbgb",
@@ -5062,21 +5062,6 @@ if not ag then
 return false,"No config file is selected"
 end
 
--- BUG FIX: previously this always built a brand-new config object with an
--- empty Elements table, even if a config with this name already existed.
--- Every element (Toggle/Slider/...) registers itself onto whichever config
--- object is CurrentConfig at the moment it's created. Overwriting that
--- object on every CreateConfig() call (i.e. every Make/Update/Load click,
--- and every internal Autoload call) silently orphaned all already-
--- registered elements, so the next Save() wrote a near-empty file.
--- Reusing the cached object preserves everything already registered.
---
--- CORRECTION: ae.Configs[name] is NOT always a config object. ae.Init()
--- pre-populates it with the raw file-content STRING for every config file
--- found on disk at startup (see ae.Init above). Calling :SetAsCurrent() on
--- that string throws a runtime error, which made Load/Update/Delete/
--- Autoload fail for every config that existed before this session. Only
--- treat it as reusable when it's actually a config object.
 local aiExisting=ae.Configs[ag]
 if typeof(aiExisting)=="table" and aiExisting.SetAsCurrent then
 if ah~=nil then
@@ -19377,16 +19362,6 @@ end
 end
 end
 
-
--- ===================== AUTOLOAD (added) =====================
--- Window:Autoload({ Parent = SomeTab, Title = "Auto Load", Desc = "...", AutoSaveInterval = 3 })
--- - Creates the "Auto Load" Toggle element for you inside Parent (a Tab or Section).
--- - On startup, scans saved configs for the one flagged to autoload and loads it automatically.
--- - Turning the toggle ON flags Window.CurrentConfig (whatever config is selected via your
---   own config dropdown/Save/Load UI) as the autoload target, and unflags every other config
---   (only one config can autoload at a time).
--- - While ON, periodically saves the current config ("auto save mode").
--- Returns the created Toggle element table.
 function av.Autoload(C,F)
 F=F or{}
 
@@ -19407,48 +19382,31 @@ local HttpService=(cloneref or clonereference or function(G)return G end)(game:G
 local AutoSaveEnabled=false
 local AutoSaveInterval=tonumber(F.AutoSaveInterval)or 3
 
-local function ReadConfigFile(G)
-local H=ConfigManager.Path..G..".json"
-if not(isfile and isfile(H))then return nil end
-local I,J=pcall(function()
-return HttpService:JSONDecode(readfile(H))
-end)
-if I then return J end
-return nil
+local function AutoLoadPointerPath()
+return ConfigManager.Path.."autoload.lua"
 end
 
-local function WriteConfigAutoLoadFlag(G,K)
-local H=ConfigManager.Path..G..".json"
-local J=ReadConfigFile(G)
-if not J then return end
-J.__autoload=K
-local L,M=pcall(function()
-writefile(H,HttpService:JSONEncode(J))
-end)
-if not L then
-warn("[ WindUI.Autoload ] Failed to update autoload flag for '"..G.."': "..tostring(M))
+local function GetAutoLoadPointer()
+local P=AutoLoadPointerPath()
+if not(isfile and isfile(P))then return nil end
+local Ok,Name=pcall(readfile,P)
+if not Ok or not Name or Name==""then return nil end
+local ConfigPath=ConfigManager.Path..Name..".json"
+if not(isfile and isfile(ConfigPath))then return nil end
+return Name
+end
+
+local function SetAutoLoadPointer(Name)
+local P=AutoLoadPointerPath()
+if Name then
+pcall(writefile,P,Name)
+elseif isfile and isfile(P)and delfile then
+pcall(delfile,P)
 end
 end
 
 local function FindAutoLoadConfigName()
-for _,G in next,ConfigManager:AllConfigs()do
-local J=ReadConfigFile(G)
-if J and J.__autoload then
-return G
-end
-end
-return nil
-end
-
-local function ClearOtherAutoLoads(Except)
-for _,G in next,ConfigManager:AllConfigs()do
-if G~=Except then
-local J=ReadConfigFile(G)
-if J and J.__autoload then
-WriteConfigAutoLoadFlag(G,false)
-end
-end
-end
+return GetAutoLoadPointer()
 end
 
 local function StartAutoSave()
@@ -19470,12 +19428,11 @@ end
 
 local ExistingAutoLoadConfig=FindAutoLoadConfigName()
 if ExistingAutoLoadConfig then
--- Reuses the library's own startup-autoload logic (reads the __autoload flag on disk
--- and loads the config ~0.5s after CreateConfig).
+
 local G=ConfigManager:CreateConfig(ExistingAutoLoadConfig,true)
 if G then
-av.CurrentConfig=G -- BUG FIX: without this the auto-save loop below finds
--- av.CurrentConfig == nil and silently saves nothing.
+av.CurrentConfig=G
+
 end
 task.delay(0.6,function()
 StartAutoSave()
@@ -19503,11 +19460,6 @@ warn"[ WindUI.Autoload ] No config is currently selected/created. Select or crea
 if AutoLoadToggle and AutoLoadToggle.Set then
 AutoLoadToggle:Set(false,nil,false)
 end
--- BUG FIX: previously OnError("no_config") fired unconditionally here,
--- even when Resolve was provided and already reported its own specific
--- reason (no selection / not found / load failed) via its own notify.
--- That produced two contradictory notifications back to back. Now the
--- generic fallback only fires when there's no Resolve to explain why.
 if not UsedResolve and typeof(F.OnError)=="function"then
 task.spawn(F.OnError,"no_config")
 end
@@ -19515,7 +19467,7 @@ return
 end
 H:SetAutoLoad(true)
 local N=H.Path and H.Path:match"([^/\\]+)%.json$"
-ClearOtherAutoLoads(N)
+SetAutoLoadPointer(N)
 H:Save()
 StartAutoSave()
 if typeof(F.OnEnabled)=="function"then
@@ -19523,6 +19475,7 @@ task.spawn(F.OnEnabled,H,N)
 end
 else
 StopAutoSave()
+SetAutoLoadPointer(nil)
 if av.CurrentConfig then
 av.CurrentConfig:SetAutoLoad(false)
 av.CurrentConfig:Save()
@@ -19536,7 +19489,6 @@ end,
 
 return AutoLoadToggle
 end
--- =================== END AUTOLOAD (added) ====================
 
 
 
