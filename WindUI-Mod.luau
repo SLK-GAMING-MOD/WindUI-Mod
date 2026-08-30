@@ -6,7 +6,7 @@ print([[
  \  /\  /| | | | | (_| \ \_/ /\/ /_   / /\/\ \ (_) | (_| |
   \/  \/ |_|_| |_|\__,_|\___/\____/   \/    \/\___/ \__,_|
                                                           
-             WindUI Mod - Version 2.6.12
+             WindUI Mod - Version 2.6.13
 ]])
 
 local a={cache={}::any}do do local function __modImpl()local b=(cloneref or clonereference or function(b)return b end)
@@ -2061,7 +2061,7 @@ New=a.i().New
 return[[
 {
     "name": "windui-mod",
-    "version": "v2.6.12",
+    "version": "v2.6.13",
     "main": "./dist/main.lua",
     "repository": "https://github.com/SLK-GAMING-MOD/WindUI-Mod",
     "discord": "https://discord.gg/Tq4CsZbgb",
@@ -5070,8 +5070,15 @@ end
 -- and every internal Autoload call) silently orphaned all already-
 -- registered elements, so the next Save() wrote a near-empty file.
 -- Reusing the cached object preserves everything already registered.
-if ae.Configs[ag]then
+--
+-- CORRECTION: ae.Configs[name] is NOT always a config object. ae.Init()
+-- pre-populates it with the raw file-content STRING for every config file
+-- found on disk at startup (see ae.Init above). Calling :SetAsCurrent() on
+-- that string throws a runtime error, which made Load/Update/Delete/
+-- Autoload fail for every config that existed before this session. Only
+-- treat it as reusable when it's actually a config object.
 local aiExisting=ae.Configs[ag]
+if typeof(aiExisting)=="table" and aiExisting.SetAsCurrent then
 if ah~=nil then
 aiExisting.AutoLoad=ah
 end
