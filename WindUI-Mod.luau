@@ -6,7 +6,7 @@ print([[
  \  /\  /| | | | | (_| \ \_/ /\/ /_   / /\/\ \ (_) | (_| |
   \/  \/ |_|_| |_|\__,_|\___/\____/   \/    \/\___/ \__,_|
                                                           
-             WindUI Mod - Version 2.6.11
+             WindUI Mod - Version 2.6.12
 ]])
 
 local a={cache={}::any}do do local function __modImpl()local b=(cloneref or clonereference or function(b)return b end)
@@ -2061,7 +2061,7 @@ New=a.i().New
 return[[
 {
     "name": "windui-mod",
-    "version": "v2.6.11",
+    "version": "v2.6.12",
     "main": "./dist/main.lua",
     "repository": "https://github.com/SLK-GAMING-MOD/WindUI-Mod",
     "discord": "https://discord.gg/Tq4CsZbgb",
@@ -19483,7 +19483,9 @@ Value=ExistingAutoLoadConfig~=nil,
 Callback=function(G)
 if G then
 local H=av.CurrentConfig
+local UsedResolve=false
 if not H and typeof(F.Resolve)=="function"then
+UsedResolve=true
 local Ok,Res=pcall(F.Resolve)
 if Ok and Res then
 H=Res
@@ -19494,7 +19496,12 @@ warn"[ WindUI.Autoload ] No config is currently selected/created. Select or crea
 if AutoLoadToggle and AutoLoadToggle.Set then
 AutoLoadToggle:Set(false,nil,false)
 end
-if typeof(F.OnError)=="function"then
+-- BUG FIX: previously OnError("no_config") fired unconditionally here,
+-- even when Resolve was provided and already reported its own specific
+-- reason (no selection / not found / load failed) via its own notify.
+-- That produced two contradictory notifications back to back. Now the
+-- generic fallback only fires when there's no Resolve to explain why.
+if not UsedResolve and typeof(F.OnError)=="function"then
 task.spawn(F.OnError,"no_config")
 end
 return
