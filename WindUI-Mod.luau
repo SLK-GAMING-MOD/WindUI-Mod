@@ -1,12 +1,13 @@
 print([[
 
- __    __ _           _        _____                    _ 
-/ / /\ \ (_)_ __   __| |/\ /\  \_   \   /\/\   ___   __| |
-\ \/  \/ / | '_ \ / _` / / \ \  / /\/  /    \ / _ \ / _` |
- \  /\  /| | | | | (_| \ \_/ /\/ /_   / /\/\ \ (_) | (_| |
-  \/  \/ |_|_| |_|\__,_|\___/\____/   \/    \/\___/ \__,_|
+ __      __.__            ._______ ___.___  __________.__                
+/  \    /  \__| ____    __| _/    |   \   | \______   \  |  __ __  ______
+\   \/\/   /  |/    \  / __ ||    |   /   |  |     ___/  | |  |  \/  ___/
+ \        /|  |   |  \/ /_/ ||    |  /|   |  |    |   |  |_|  |  /\___ \ 
+  \__/\  / |__|___|  /\____ ||______/ |___|  |____|   |____/____//____  >
+       \/          \/      \/                                         \/ 
                                                           
-             WindUI Mod - Version 2.6.14
+             WindUI Plus - Version 0.0.3
 ]])
 
 local a={cache={}::any}do do local function __modImpl()local b=(cloneref or clonereference or function(b)return b end)
@@ -45,7 +46,7 @@ if type(h)=="number"then
 i="rbxassetid://"..tostring(h)
 end
 
-d.Icons[e].Iwindui-={
+d.Icons[e].Icons[g]={
 Image=i,
 ImageRectSize=Vector2.new(0,0),
 ImageRectPosition=Vector2.new(0,0),
@@ -520,6 +521,13 @@ if not r then
 return
 end
 
+if a.SuppressCallbacks then
+local _t={r,...}
+a._PendingCallbacks=a._PendingCallbacks or{}
+a._PendingCallbacks[#a._PendingCallbacks+1]=_t
+return
+end
+
 local u,v=pcall(r,...)
 if not u then
 if m and m.Window and m.Window.Debug then local
@@ -880,6 +888,18 @@ return x
 end
 
 function p.Tween(r,u,v,...)
+if a.SuppressCallbacks then
+for _k,_v in next,(v or{})do
+pcall(function()
+r[_k]=_v
+end)
+end
+return{
+Play=function()end,
+Pause=function()end,
+Cancel=function()end,
+}
+end
 return f:Create(r,TweenInfo.new(u,...),v)
 end
 
@@ -2060,12 +2080,12 @@ New=a.i().New
 
 return[[
 {
-    "name": "windui-mod",
-    "version": "v2.6.14",
+    "name": "windui-plus",
+    "version": "v0.0.3",
     "main": "./dist/main.lua",
-    "repository": "https://github.com/SLK-GAMING-MOD/WindUI-Mod",
-    "discord": "https://discord.gg/Tq4CsZbgb",
-    "author": "by Footagesus | Mod by 72ms",
+    "repository": "https://github.com/",
+    "discord": "http://discord.gg/AxosHub",
+    "author": "Make By 72ms",
     "description": "Roblox UI Library for scripts",
     "license": "MIT",
     "scripts": {
@@ -4926,6 +4946,7 @@ ae={
 Folder=nil,
 Path=nil,
 Configs={},
+_Cache={},
 Parser={
 Colorpicker={
 Save=function(af)
@@ -4936,9 +4957,16 @@ transparency=af.Transparency or nil,
 }
 end,
 Load=function(af,ag)
-    if af and af.Set then
-        af:Set(Color3.fromHex(ag.value), ag.transparency)
-    end
+if af and af.Update then
+local _same=false
+if af.Default then
+local _hex=pcall(function()return af.Default:ToHex()end)
+_same=(_hex and af.Default:ToHex()==ag.value)or(not _hex)
+end
+if not _same then
+af:Update(Color3.fromHex(ag.value),ag.transparency or nil)
+end
+end
 end
 },
 Dropdown={
@@ -4950,7 +4978,14 @@ value=af.Value,
 end,
 Load=function(af,ag)
 if af and af.Select then
+local _cur=af.Value
+local _sel=_cur
+if type(_cur)=="table"then
+_sel=_cur[1]
+end
+if _sel~=ag.value then
 af:Select(ag.value)
+end
 end
 end
 },
@@ -4963,7 +4998,9 @@ value=af.Value,
 end,
 Load=function(af,ag)
 if af and af.Set then
+if af.Value~=ag.value then
 af:Set(ag.value)
+end
 end
 end
 },
@@ -4976,7 +5013,9 @@ value=af.Value,
 end,
 Load=function(af,ag)
 if af and af.Set then
+if af.Value~=ag.value then
 af:Set(ag.value)
+end
 end
 end
 },
@@ -4989,7 +5028,10 @@ value=af.Value.Default,
 end,
 Load=function(af,ag)
 if af and af.Set then
+local _cur=af.Value and af.Value.Default
+if tonumber(_cur)~=tonumber(ag.value)then
 af:Set(tonumber(ag.value))
+end
 end
 end
 },
@@ -5002,7 +5044,9 @@ value=af.Value,
 end,
 Load=function(af,ag)
 if af and af.Set then
+if af.Value~=ag.value then
 af:Set(ag.value)
+end
 end
 end
 },
@@ -5027,14 +5071,25 @@ if not isfolder(ae.Path)then
 makefolder(ae.Path)
 end
 
-local ah=ae:AllConfigs()
+for ah,ai in next,ae:AllConfigs()do
+ae.Configs[ai]=ae.Configs[ai]or{Name=ai,Path=ae.Path..ai..".json",__preload=true}
+end
 
-for ai,aj in next,ah do
-local ak=ae.Path..aj..".json"
-if isfile and readfile and isfile(ak)then
-ae.Configs[aj]=readfile(ak)
+task.spawn(function()
+for ah,ai in next,ae:AllConfigs()do
+if not ae._Cache[ai]then
+local aj=ae.Path..ai..".json"
+if isfile and readfile and isfile(aj)then
+local ak,al=pcall(function()
+return ac:JSONDecode(readfile(aj))
+end)
+if ak and type(al)=="table"then
+ae._Cache[ai]=al
 end
 end
+end
+end
+end)
 
 return ae
 end
@@ -5062,21 +5117,15 @@ if not ag then
 return false,"No config file is selected"
 end
 
-local aiExisting=ae.Configs[ag]
-if typeof(aiExisting)=="table" and aiExisting.SetAsCurrent then
-if ah~=nil then
-aiExisting.AutoLoad=ah
-end
-aiExisting:SetAsCurrent()
-return aiExisting
-end
-
 local ai={
+Name=ag,
 Path=ae.Path..ag..".json",
 Elements={},
 CustomData={},
 AutoLoad=ah or false,
 Version=1.2,
+_lastJSON=nil,
+_writeScheduled=false,
 }
 
 function ai.SetAsCurrent(aj)
@@ -5103,38 +5152,59 @@ function ai.SetAutoLoad(aj,ak)
 ai.AutoLoad=ak
 end
 
-local ar = 0
-function ai.Save(aj)
+function ai.Save(aj,ak)
 if ad.PendingFlags then
-for ak,al in next,ad.PendingFlags do
-ai:Register(ak,al)
+for al,am in next,ad.PendingFlags do
+ai:Register(al,am)
 end
 end
 
-local ak={
+local al={
 __version=ai.Version,
 __elements={},
 __autoload=ai.AutoLoad,
 __custom=ai.CustomData
 }
 
-for al,am in next,ai.Elements do
-if ae.Parser[am.__type]then
-ak.__elements[tostring(al)]=ae.Parser[am.__type].Save(am)
+local am=ae.Parser
+for an,ao in next,ai.Elements do
+local ap=am[ao.__type]
+if ap then
+al.__elements[tostring(an)]=ap.Save(ao)
 end
 end
 
-ar = ar + 1
-local myGen = ar
-task.delay(0.15, function()
-if myGen ~= ar then return end
-local al = ac:JSONEncode(ak)
+local aq=ac:JSONEncode(al)
+ae._Cache[ag]=al
+
+if aq==ai._lastJSON then
+return al
+end
+ai._lastJSON=aq
+
 if writefile then
-writefile(ai.Path, al)
+if ak=="now"then
+local ar,as=pcall(writefile,ai.Path,aq)
+if not ar then
+warn("[ WindUI.ConfigManager ] Failed to write config: "..tostring(as))
+end
+elseif not ai._writeScheduled then
+ai._writeScheduled=true
+local ar=ai.Path
+task.defer(function()
+ai._writeScheduled=false
+local as=ai._lastJSON
+if as then
+local at,au=pcall(writefile,ar,as)
+if not at then
+warn("[ WindUI.ConfigManager ] Failed to write config: "..tostring(au))
+end
 end
 end)
+end
+end
 
-return ak
+return al
 end
 
 function ai.Load(aj)
@@ -5142,25 +5212,32 @@ if isfile and not isfile(ai.Path)then
 return false,"Config file does not exist"
 end
 
-local ak,al=pcall(function()
-local ak=readfile or function()
+local al=ae._Cache[ag]
+
+if not al then
+local ak,am=pcall(function()
+local an=readfile or function()
 warn"[ WindUI.ConfigManager ] The config system doesn't work in the studio."
 return nil
 end
-return ac:JSONDecode(ak(ai.Path))
+return ac:JSONDecode(an(ai.Path))
 end)
 
 if not ak then
 return false,"Failed to parse config file"
 end
 
+al=am
+ae._Cache[ag]=al
+end
+
 if not al.__version then
-local am={
+al={
 __version=ai.Version,
 __elements=al,
 __custom={}
 }
-al=am
+ae._Cache[ag]=al
 end
 
 if ad.PendingFlags then
@@ -5170,16 +5247,34 @@ end
 end
 
 task.spawn(function()
-local count = 0
-for am, ao in next, (al.__elements or {}) do
-if ai.Elements[am] and ae.Parser[ao.__type] then
-local ok, err = pcall(ae.Parser[ao.__type].Load, ai.Elements[am], ao)
-if not ok and ad.Debug then
-warn("[ WindUI.ConfigManager ] Failed to load element '"..tostring(am).."': "..tostring(err))
+local ao=ae.Parser
+local ap=ai.Elements
+
+a.SuppressCallbacks=true
+
+local _err
+for am,an in next,(al.__elements or{})do
+local ar=ap[am]
+local as=an and ao[an.__type]
+
+if ar and as then
+local at,au=pcall(as.Load,ar,an)
+if not at then
+warn("[ WindUI.ConfigManager ] Failed to load element '"..tostring(am).."': "..tostring(au))
 end
-count = count + 1
-if count % 8 == 0 then
-task.wait()
+end
+end
+
+a.SuppressCallbacks=false
+
+local _q=a._PendingCallbacks
+a._PendingCallbacks=nil
+if _q then
+for _i=1,#_q do
+local _t=_q[_i]
+local _cb=table.remove(_t,1)
+if _cb then
+pcall(_cb,table.unpack(_t))
 end
 end
 end
@@ -5208,6 +5303,7 @@ return false,"Failed to delete config file: "..tostring(al)
 end
 
 ae.Configs[ag]=nil
+ae._Cache[ag]=nil
 
 if ad.CurrentConfig==ai then
 ad.CurrentConfig=nil
@@ -5225,12 +5321,20 @@ autoload=ai.AutoLoad
 end
 
 
-if isfile(ai.Path)then
-local aj,ak=pcall(function()
+do
+local aj=ae._Cache[ag]
+
+if not aj and isfile(ai.Path)then
+local ak,al=pcall(function()
 return ac:JSONDecode(readfile(ai.Path))
 end)
+if ak and type(al)=="table"then
+aj=al
+ae._Cache[ag]=al
+end
+end
 
-if aj and ak and ak.__autoload then
+if aj and aj.__autoload then
 ai.AutoLoad=true
 
 task.spawn(function()
@@ -5289,6 +5393,7 @@ return false,"Failed to delete config file: "..tostring(aj)
 end
 
 ae.Configs[ag]=nil
+ae._Cache[ag]=nil
 
 if ad.CurrentConfig and ad.CurrentConfig.Path==ah then
 ad.CurrentConfig=nil
@@ -11737,9 +11842,7 @@ end
 end
 
 function at.Set(av,aw,ax)
-    at:Update(aw,ax)
-
-    aa.SafeCallback(at.Callback, aw, ax)
+return at:Update(aw,ax)
 end
 
 aa.AddSignal(at.UIElements.Colorpicker.MouseButton1Click,function()
@@ -13088,7 +13191,6 @@ local av=aa.NewRoundFrame(ai.Window.ElementConfig.UICorner,"Squircle",{
 Size=UDim2.new(1,0,0,0),
 BackgroundTransparency=1,
 Parent=ai.Parent,
-ClipsDescendants=true,
 AutomaticSize="Y",
 ThemeTag=ak.Box and{
 ImageTransparency="SectionBoxBackgroundTransparency",
@@ -13096,17 +13198,16 @@ ImageColor3="SectionBoxBackground",
 }or nil,
 ImageTransparency=not ak.Box and 1 or nil,
 },{
-aa.NewRoundFrame(ai.Window.ElementConfig.UICorner,"SquircleOutline",{
-    BackgroundTransparency=1,
-    Size=UDim2.new(1,0,1,0),
-    ThemeTag={
-        ImageColor3="SectionBoxBorder",
-    },
-    ImageTransparency=0.5,
-    ZIndex=2,
-    Visible=ak.Box and ak.BoxBorder,
-    Name="Outline",
-}),
+aa.NewRoundFrame(ai.Window.ElementConfig.UICorner-1,"SquircleOutline",{
+Size=UDim2.new(1,0,1,0),
+ThemeTag={
+ImageColor3="SectionBoxBorder",
+},
+ImageTransparency=ak.Box and ak.BoxBorder and 0.92 or 1,
+Name="Outline",
+ClipsDescendants=true,
+},{
+
 ad("TextButton",{
 Name="Top",
 Size=UDim2.new(1,0,0,ak.HeaderSize),
@@ -13157,13 +13258,14 @@ Padding=UDim.new(0,ai.Tab.Gap),
 VerticalAlignment="Top",
 }),
 }),
+}),
 })
 
 ak.ElementFrame=av
 ak.UIElements={
 Main=av,
-Top=av.Top,
-Content=av.Content,
+Top=av.Outline.Top,
+Content=av.Outline.Content,
 Icon=ao,
 Title=aq,
 Desc=ar,
@@ -13177,9 +13279,9 @@ ap.Size=UDim2.new(1,-(aw+ax),0,0)
 end
 
 local function UpdateContentLayout()
-local aw=av.Top.AbsoluteSize.Y/GetUIScale()
-av.Content.Position=UDim2.new(0,0,0,aw)
-av.HeaderDivider.Position=UDim2.new(0.5,0,0,aw)
+local aw=av.Outline.Top.AbsoluteSize.Y/GetUIScale()
+av.Outline.Content.Position=UDim2.new(0,0,0,aw)
+av.Outline.HeaderDivider.Position=UDim2.new(0.5,0,0,aw)
 end
 
 local function SetHoverState(aw)
@@ -13233,8 +13335,8 @@ end
 
 UpdateContentLayout()
 
-local ax=av.Top.AbsoluteSize.Y
-local ay=ak.Opened and av.Content.AbsoluteSize.Y or 0
+local ax=av.Outline.Top.AbsoluteSize.Y
+local ay=ak.Opened and av.Outline.Content.AbsoluteSize.Y or 0
 local az=(ax+ay)/GetUIScale()
 
 local aA=UDim2.new(av.Size.X.Scale,av.Size.X.Offset,0,az)
@@ -13247,7 +13349,7 @@ Size=aA,
 },Enum.EasingStyle.Quint,Enum.EasingDirection.Out):Play()
 end
 
-av.HeaderDivider.Visible=ak.Opened and ak.Box and av.Content.AbsoluteSize.Y>0
+av.Outline.HeaderDivider.Visible=ak.Opened and ak.Box and av.Outline.Content.AbsoluteSize.Y>0
 end
 
 local function EnsureExpandable()
@@ -13257,8 +13359,8 @@ end
 
 ak.Expandable=true
 as.Visible=true
-av.Top.Active=true
-av.Content.Visible=true
+av.Outline.Top.Active=true
+av.Outline.Content.Visible=true
 av.AutomaticSize="None"
 
 UpdateTitleSize()
@@ -13352,7 +13454,7 @@ end
 function ak.Open(aw,ax)
 if ak.Expandable then
 ak.Opened=true
-av.Content.Visible=true
+av.Outline.Content.Visible=true
 SetChevronState(true,ax)
 SyncHeight(ax)
 end
@@ -13372,7 +13474,7 @@ end
 
 local aw=ai.ElementsModule
 
-aw.Load(ak,av.Content,aw.Elements,ai.Window,ai.WindUI,function(ax)
+aw.Load(ak,av.Outline.Content,aw.Elements,ai.Window,ai.WindUI,function(ax)
 EnsureExpandable()
 
 if ak.Opened then
@@ -13382,7 +13484,7 @@ ak:Close(true)
 end
 end,aw,ai.UIScale,ai.Tab)
 
-aa.AddSignal(av.Top:GetPropertyChangedSignal"AbsoluteSize",function()
+aa.AddSignal(av.Outline.Top:GetPropertyChangedSignal"AbsoluteSize",function()
 UpdateTitleSize()
 UpdateContentLayout()
 
@@ -13395,13 +13497,13 @@ aa.AddSignal(at:GetPropertyChangedSignal"AbsoluteSize",function()
 UpdateTitleSize()
 end)
 
-aa.AddSignal(av.Content.UIListLayout:GetPropertyChangedSignal"AbsoluteContentSize",function()
+aa.AddSignal(av.Outline.Content.UIListLayout:GetPropertyChangedSignal"AbsoluteContentSize",function()
 if ak.Expandable then
 SyncHeight(true)
 end
 end)
 
-aa.AddSignal(av.Top.MouseEnter,function()
+aa.AddSignal(av.Outline.Top.MouseEnter,function()
 if not ak.HoverFeedback then
 return
 end
@@ -13410,13 +13512,13 @@ am=true
 SetHoverState(false)
 end)
 
-aa.AddSignal(av.Top.MouseLeave,function()
+aa.AddSignal(av.Outline.Top.MouseLeave,function()
 am=false
 an=false
 SetHoverState(false)
 end)
 
-aa.AddSignal(av.Top.InputBegan,function(ax)
+aa.AddSignal(av.Outline.Top.InputBegan,function(ax)
 if not ak.HoverFeedback or not IsPressInput(ax)then
 return
 end
@@ -13425,7 +13527,7 @@ an=true
 SetHoverState(false)
 end)
 
-aa.AddSignal(av.Top.InputEnded,function(ax)
+aa.AddSignal(av.Outline.Top.InputEnded,function(ax)
 if not ak.HoverFeedback or not IsPressInput(ax)then
 return
 end
@@ -13434,7 +13536,7 @@ an=false
 SetHoverState(false)
 end)
 
-aa.AddSignal(av.Top.Activated,function()
+aa.AddSignal(av.Outline.Top.Activated,function()
 if ak.Expandable then
 if ak.Opened then
 ak:Close()
@@ -13449,10 +13551,10 @@ UpdateTitleSize()
 UpdateContentLayout()
 
 if not ak.Expandable then
-av.Content.Visible=false
-av.Top.Active=false
-av.Top.Size=UDim2.new(1,0,0,ak.HeaderSize)
-av.Top.AutomaticSize="Y"
+av.Outline.Content.Visible=false
+av.Outline.Top.Active=false
+av.Outline.Top.Size=UDim2.new(1,0,0,ak.HeaderSize)
+av.Outline.Top.AutomaticSize="Y"
 av.AutomaticSize="Y"
 end
 
@@ -13660,7 +13762,6 @@ local d=aa.NewRoundFrame(al.Window.ElementConfig.UICorner,"Squircle",{
 Size=UDim2.new(1,0,0,0),
 BackgroundTransparency=1,
 Parent=al.Parent,
-ClipsDescendants=true,
 AutomaticSize="Y",
 ThemeTag=am.Box and{
 ImageTransparency="SectionBoxBackgroundTransparency",
@@ -13668,21 +13769,16 @@ ImageColor3="SectionBoxBackground",
 }or nil,
 ImageTransparency=not am.Box and 1 or nil,
 },{
-aa.NewRoundFrame(
-    al.Window.ElementConfig.UICorner,
-    "SquircleOutline",
-    {
-        BackgroundTransparency=1,
-        Size=UDim2.new(1,0,1,0),
-        ThemeTag={
-            ImageColor3="SectionBoxBorder",
-        },
-        ImageTransparency=0.5,
-        ZIndex=2,
-        Visible=am.Box and am.BoxBorder,
-        Name="Outline",
-    }
-),
+aa.NewRoundFrame(al.Window.ElementConfig.UICorner-1,"SquircleOutline",{
+Size=UDim2.new(1,0,1,0),
+ThemeTag={
+ImageColor3="SectionBoxBorder",
+},
+ImageTransparency=am.Box and am.BoxBorder and 0.92 or 1,
+Name="Outline",
+ClipsDescendants=true,
+},{
+
 ad("TextButton",{
 Name="Top",
 Size=UDim2.new(1,0,0,am.HeaderSize),
@@ -13764,23 +13860,24 @@ AutomaticSize="Y",
 BackgroundTransparency=1,
 }),
 }),
+}),
 })
 
 am.ElementFrame=d
 am.UIElements={
 Main=d,
-Top=d.Top,
-Content=d.Content,
-Tabs=d.Content.Tabs,
-TabsScroll=d.Content.Tabs.Scroll,
-TabsContent=d.Content.TabsContent,
+Top=d.Outline.Top,
+Content=d.Outline.Content,
+Tabs=d.Outline.Content.Tabs,
+TabsScroll=d.Outline.Content.Tabs.Scroll,
+TabsContent=d.Outline.Content.TabsContent,
 Icon=aw,
 Title=ay,
 Desc=az,
 Chevron=aA.ImageLabel,
 }
 
-local f=d.Content.Tabs.Scroll.UIListLayout
+local f=d.Outline.Content.Tabs.Scroll.UIListLayout
 
 local function UpdateTitleSize()
 local g=aw.Visible and(ToLayoutOffset(aw.AbsoluteSize.X)+am.HeaderGap)or 0
@@ -13876,9 +13973,9 @@ UpdateWindowScrollLock()
 end
 
 local function UpdateContentLayout()
-local g=d.Top.AbsoluteSize.Y/GetUIScale()
-d.Content.Position=UDim2.new(0,0,0,g)
-d.HeaderDivider.Position=UDim2.new(0.5,0,0,g)
+local g=d.Outline.Top.AbsoluteSize.Y/GetUIScale()
+d.Outline.Content.Position=UDim2.new(0,0,0,g)
+d.Outline.HeaderDivider.Position=UDim2.new(0.5,0,0,g)
 end
 
 local function SetHoverState(g)
@@ -13929,8 +14026,8 @@ end
 UpdateTabsAlignment()
 UpdateContentLayout()
 
-local h=d.Top.AbsoluteSize.Y
-local j=am.Opened and d.Content.AbsoluteSize.Y or 0
+local h=d.Outline.Top.AbsoluteSize.Y
+local j=am.Opened and d.Outline.Content.AbsoluteSize.Y or 0
 local l=(h+j)/GetUIScale()
 
 local m=UDim2.new(d.Size.X.Scale,d.Size.X.Offset,0,l)
@@ -13943,7 +14040,7 @@ Size=m,
 },Enum.EasingStyle.Quint,Enum.EasingDirection.Out):Play()
 end
 
-d.HeaderDivider.Visible=am.Opened and am.Box and d.Content.AbsoluteSize.Y>0
+d.Outline.HeaderDivider.Visible=am.Opened and am.Box and d.Outline.Content.AbsoluteSize.Y>0
 end
 
 local function EnsureExpandable()
@@ -13953,8 +14050,8 @@ end
 
 am.Expandable=true
 aA.Visible=true
-d.Top.Active=true
-d.Content.Visible=true
+d.Outline.Top.Active=true
+d.Outline.Content.Visible=true
 d.AutomaticSize="None"
 
 UpdateTitleSize()
@@ -14445,7 +14542,7 @@ end
 function am.Open(g,h)
 if am.Expandable then
 am.Opened=true
-d.Content.Visible=true
+d.Outline.Content.Visible=true
 SetChevronState(true,h)
 SyncHeight(h)
 UpdateWindowScrollLock()
@@ -14465,7 +14562,7 @@ if am.Icon then
 am:SetIcon(am.Icon)
 end
 
-aa.AddSignal(d.Top:GetPropertyChangedSignal"AbsoluteSize",function()
+aa.AddSignal(d.Outline.Top:GetPropertyChangedSignal"AbsoluteSize",function()
 UpdateTitleSize()
 UpdateContentLayout()
 
@@ -14478,7 +14575,7 @@ aa.AddSignal(aB:GetPropertyChangedSignal"AbsoluteSize",function()
 UpdateTitleSize()
 end)
 
-aa.AddSignal(d.Content.UIListLayout:GetPropertyChangedSignal"AbsoluteContentSize",function()
+aa.AddSignal(d.Outline.Content.UIListLayout:GetPropertyChangedSignal"AbsoluteContentSize",function()
 if am.Expandable then
 SyncHeight(true)
 end
@@ -14522,7 +14619,7 @@ local m=math.clamp(h.CanvasPosition.X+l,0,j)
 h.CanvasPosition=Vector2.new(m,0)
 end)
 
-aa.AddSignal(d.Top.MouseEnter,function()
+aa.AddSignal(d.Outline.Top.MouseEnter,function()
 if not am.HoverFeedback then
 return
 end
@@ -14531,13 +14628,13 @@ ao=true
 SetHoverState(false)
 end)
 
-aa.AddSignal(d.Top.MouseLeave,function()
+aa.AddSignal(d.Outline.Top.MouseLeave,function()
 ao=false
 ap=false
 SetHoverState(false)
 end)
 
-aa.AddSignal(d.Top.InputBegan,function(g)
+aa.AddSignal(d.Outline.Top.InputBegan,function(g)
 if not am.HoverFeedback or not IsPressInput(g)then
 return
 end
@@ -14546,7 +14643,7 @@ ap=true
 SetHoverState(false)
 end)
 
-aa.AddSignal(d.Top.InputEnded,function(g)
+aa.AddSignal(d.Outline.Top.InputEnded,function(g)
 if not am.HoverFeedback or not IsPressInput(g)then
 return
 end
@@ -14555,7 +14652,7 @@ ap=false
 SetHoverState(false)
 end)
 
-aa.AddSignal(d.Top.Activated,function()
+aa.AddSignal(d.Outline.Top.Activated,function()
 if am.Expandable then
 if am.Opened then
 am:Close()
@@ -14571,10 +14668,10 @@ UpdateContentLayout()
 UpdateTabsAlignment()
 
 if not am.Expandable then
-d.Content.Visible=false
-d.Top.Active=false
-d.Top.Size=UDim2.new(1,0,0,am.HeaderSize)
-d.Top.AutomaticSize="Y"
+d.Outline.Content.Visible=false
+d.Outline.Top.Active=false
+d.Outline.Top.Size=UDim2.new(1,0,0,am.HeaderSize)
+d.Outline.Top.AutomaticSize="Y"
 d.AutomaticSize="Y"
 end
 
@@ -14978,6 +15075,20 @@ end
 end
 end
 
+local PendingShapeUpdates={}
+local function QueueShapeUpdate(ao)
+if not ao or PendingShapeUpdates[ao]then
+return
+end
+PendingShapeUpdates[ao]=true
+task.defer(function()
+PendingShapeUpdates[ao]=nil
+if ao.UpdateAllElementShapes then
+ao:UpdateAllElementShapes(ao)
+end
+end)
+end
+
 for an,ao in next,ae do
 aa[an]=function(ap,aq)
 aq=aq or{}
@@ -15086,11 +15197,9 @@ af.PendingFlags[aq.Flag]=nil
 end
 end
 
-if aa.UpdateAllElementShapes then
-aa:UpdateAllElementShapes(aa)
-end
-if aq.Tab and aq.Tab~=aa and aq.Tab.UpdateAllElementShapes then
-aq.Tab:UpdateAllElementShapes(aq.Tab)
+QueueShapeUpdate(aa)
+if aq.Tab and aq.Tab~=aa then
+QueueShapeUpdate(aq.Tab)
 end
 end
 
@@ -15103,7 +15212,7 @@ table.insert(aq.Tab.Elements,as)
 end
 
 if af.ModernLayout then
-aa:UpdateAllElementShapes(aa)
+QueueShapeUpdate(aa)
 end
 
 if ai then
@@ -19112,7 +19221,7 @@ av:SetToTheCenter()
 av:Dialog{
 
 Title="Close Window",
-Content="Are you sure you want to close this window?",
+Content="Do you want to close this window? You will not be able to open it again.",
 Buttons={
 {
 Title="Cancel",
@@ -19121,7 +19230,7 @@ Callback=function()aC=false end,
 Variant="Secondary",
 },
 {
-Title="Continue",
+Title="Close Window",
 
 Callback=function()
 aC=false
@@ -19360,134 +19469,6 @@ W.Object.Visible=false
 end
 end
 end
-end
-
-function av.Autoload(C,F)
-F=F or{}
-
-local ConfigManager=av.ConfigManager
-if not ConfigManager then
-warn"[ WindUI.Autoload ] ConfigManager is not available. Set Window.Folder to enable the config system."
-return nil
-end
-
-local Parent=F.Parent
-if not Parent or not Parent.Toggle then
-warn"[ WindUI.Autoload ] Autoload requires a valid 'Parent' (a Tab or Section) to place the toggle in."
-return nil
-end
-
-local HttpService=(cloneref or clonereference or function(G)return G end)(game:GetService"HttpService")
-
-local AutoSaveEnabled=false
-local AutoSaveInterval=tonumber(F.AutoSaveInterval)or 3
-
-local function AutoLoadPointerPath()
-return ConfigManager.Path.."autoload.lua"
-end
-
-local function GetAutoLoadPointer()
-local P=AutoLoadPointerPath()
-if not(isfile and isfile(P))then return nil end
-local Ok,Name=pcall(readfile,P)
-if not Ok or not Name or Name==""then return nil end
-local ConfigPath=ConfigManager.Path..Name..".json"
-if not(isfile and isfile(ConfigPath))then return nil end
-return Name
-end
-
-local function SetAutoLoadPointer(Name)
-local P=AutoLoadPointerPath()
-if Name then
-pcall(writefile,P,Name)
-elseif isfile and isfile(P)and delfile then
-pcall(delfile,P)
-end
-end
-
-local function FindAutoLoadConfigName()
-return GetAutoLoadPointer()
-end
-
-local function StartAutoSave()
-if AutoSaveEnabled then return end
-AutoSaveEnabled=true
-task.spawn(function()
-while AutoSaveEnabled and not av.Destroyed do
-task.wait(AutoSaveInterval)
-if AutoSaveEnabled and av.CurrentConfig and av.CurrentConfig.Save then
-pcall(function()av.CurrentConfig:Save()end)
-end
-end
-end)
-end
-
-local function StopAutoSave()
-AutoSaveEnabled=false
-end
-
-local ExistingAutoLoadConfig=FindAutoLoadConfigName()
-if ExistingAutoLoadConfig then
-
-local G=ConfigManager:CreateConfig(ExistingAutoLoadConfig,true)
-if G then
-av.CurrentConfig=G
-
-end
-task.delay(0.6,function()
-StartAutoSave()
-end)
-end
-
-local AutoLoadToggle=Parent:Toggle{
-Title=F.Title or"Auto Load",
-Desc=F.Desc,
-Icon=F.Icon,
-Value=ExistingAutoLoadConfig~=nil,
-Callback=function(G)
-if G then
-local H=av.CurrentConfig
-local UsedResolve=false
-if not H and typeof(F.Resolve)=="function"then
-UsedResolve=true
-local Ok,Res=pcall(F.Resolve)
-if Ok and Res then
-H=Res
-end
-end
-if not H then
-warn"[ WindUI.Autoload ] No config is currently selected/created. Select or create a config first."
-if AutoLoadToggle and AutoLoadToggle.Set then
-AutoLoadToggle:Set(false,nil,false)
-end
-if not UsedResolve and typeof(F.OnError)=="function"then
-task.spawn(F.OnError,"no_config")
-end
-return
-end
-H:SetAutoLoad(true)
-local N=H.Path and H.Path:match"([^/\\]+)%.json$"
-SetAutoLoadPointer(N)
-H:Save()
-StartAutoSave()
-if typeof(F.OnEnabled)=="function"then
-task.spawn(F.OnEnabled,H,N)
-end
-else
-StopAutoSave()
-SetAutoLoadPointer(nil)
-if av.CurrentConfig then
-av.CurrentConfig:SetAutoLoad(false)
-av.CurrentConfig:Save()
-end
-if typeof(F.OnDisabled)=="function"then
-task.spawn(F.OnDisabled)
-end
-end
-end,
-}
-
-return AutoLoadToggle
 end
 
 
@@ -19915,6 +19896,18 @@ aa.Window=aC
 if av.Acrylic then
 ap.init()
 end
+
+
+
+
+
+
+
+
+
+
+
+
 
 return aC
 end
